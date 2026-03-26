@@ -1,0 +1,21 @@
+# WinUI / Windows App SDK specifics
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+ARM64/
+AppPackages/
+BundleArtifacts/
+Package.StoreAssociation.xml
+_UpgradeReport_Files/
+*.msix
+*.appx
+*.appxbundle
+*.msixbundle
+
+# Standard VS/C# 
+.vs/
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo

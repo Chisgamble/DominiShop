@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "DominiShop (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "DominiShop (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
