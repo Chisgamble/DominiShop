@@ -9,11 +9,11 @@
   IgnorableNamespaces="uap rescap systemai">
 
   <Identity
-    Name="82cff82b-2dbb-46c9-85d6-2cae655c38fa"
+    Name="b76ba6b7-745d-4a31-8c6b-1648109191b3"
     Publisher="CN=chitr"
     Version="1.0.0.0" />
 
-  <mp:PhoneIdentity PhoneProductId="82cff82b-2dbb-46c9-85d6-2cae655c38fa" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
+  <mp:PhoneIdentity PhoneProductId="b76ba6b7-745d-4a31-8c6b-1648109191b3" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
     <DisplayName>DominiShop</DisplayName>
