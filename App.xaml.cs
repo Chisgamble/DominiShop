@@ -1,4 +1,10 @@
-﻿using Microsoft.UI.Xaml;
+﻿using DominiShop.Model;
+using DominiShop.Repository;
+using DominiShop.Service;
+using DominiShop.View;
+using DominiShop.ViewModel;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Data;
@@ -6,6 +12,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using Microsoft.UI.Xaml.Shapes;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -15,6 +22,7 @@ using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.System;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -26,7 +34,8 @@ namespace DominiShop
     /// </summary>
     public partial class App : Application
     {
-        private Window? _window;
+        private static Window? _window;
+        public static IServiceProvider Services { get; private set; } = null!;
 
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
@@ -35,6 +44,24 @@ namespace DominiShop
         public App()
         {
             InitializeComponent();
+            Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Debug()
+            .WriteTo.Debug()
+            .CreateLogger();
+
+            Log.Information("Ứng dụng WinUI 3 đã bắt đầu khởi chạy.");
+            Services = BuildServices();
+        }
+
+        private static ServiceProvider BuildServices()
+        {
+            var services = new ServiceCollection();
+
+            services.AddSingleton<IRepo<Owner, Guid>, OwnerRepository>();
+            services.AddSingleton<AuthService>();
+            services.AddSingleton<AuthViewModel>();
+
+            return services.BuildServiceProvider();
         }
 
         /// <summary>
@@ -45,6 +72,12 @@ namespace DominiShop
         {
             _window = new MainWindow();
             _window.Activate();
+        }
+
+        public static void NavigateToMain()
+        {
+            if (_window is MainWindow mw)
+                mw.Navigate(typeof(MainPage));
         }
     }
 }

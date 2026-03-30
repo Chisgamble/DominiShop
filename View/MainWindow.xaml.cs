@@ -16,7 +16,7 @@ using Windows.Foundation.Collections;
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
-namespace DominiShop
+namespace DominiShop.View
 {
     /// <summary>
     /// An empty window that can be used on its own or navigated to within a Frame.
@@ -26,6 +26,9 @@ namespace DominiShop
         public MainWindow()
         {
             InitializeComponent();
+            RootFrame.Navigate(typeof(AuthPage));
         }
+        public void Navigate(Type pageType) => RootFrame.Navigate(pageType);
+
     }
 }

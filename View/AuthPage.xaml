@@ -4,11 +4,154 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:DominiShop.View"
+    xmlns:conv="using:DominiShop.Converter"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d">
+    mc:Ignorable="d"
+    Background="Transparent">
+
+    <Page.Resources>
+        <conv:BoolToVisibilityConverter         x:Key="BoolToVis"/>
+        <conv:InverseBoolToVisibilityConverter  x:Key="InvBoolToVis"/>
+        <conv:BoolNegationConverter      x:Key="BoolNegation"/>
+    </Page.Resources>
 
     <Grid>
+        <!-- Background -->
+        <Image Source="ms-appx:///Assets/login-bg.jpg"
+        Stretch="UniformToFill"/>
+        <Rectangle Fill="#B2000000"/>
 
+        <!-- Centered card -->
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                HorizontalScrollBarVisibility="Disabled">
+            <Border HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            Width="440"
+            Margin="0,40"
+            CornerRadius="16"
+            Padding="44,40"
+            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+            BorderThickness="1">
+
+                <StackPanel Spacing="0">
+
+                    <!-- Logo -->
+                    <Image Source="ms-appx:///Assets/logo.jpg"
+                    Width="100" Height="80"
+                    HorizontalAlignment="Center"
+                    Margin="0,0,0,12"/>
+
+                    <TextBlock Text="DominiShop"
+                        Style="{ThemeResource TitleLargeTextBlockStyle}"
+                        HorizontalAlignment="Center"/>
+
+                    <TextBlock Text="Welcome back"
+                       HorizontalAlignment="Center"
+                       Margin="0,4,0,28"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       Visibility="{x:Bind ViewModel.IsLoginMode, Mode=OneWay, Converter={StaticResource BoolToVis}}"/>
+
+                    <TextBlock Text="Create your account"
+                       HorizontalAlignment="Center"
+                       Margin="0,4,0,28"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       Visibility="{x:Bind ViewModel.IsSignUpMode, Mode=OneWay, Converter={StaticResource BoolToVis}}"/>
+
+                    <!-- Notifications -->
+                    <InfoBar IsOpen="{x:Bind ViewModel.HasError, Mode=OneWay}"
+                        Severity="Error"
+                        Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
+                        IsClosable="False"
+                        Margin="0,0,0,12"/>
+
+                    <InfoBar IsOpen="{x:Bind ViewModel.HasSuccess, Mode=OneWay}"
+                        Severity="Success"
+                        Message="{x:Bind ViewModel.SuccessMessage, Mode=OneWay}"
+                        IsClosable="False"
+                        Margin="0,0,0,12"/>
+
+                    <!-- =====================LOGIN FORM==================== -->
+                    <StackPanel Spacing="16"
+                        Visibility="{x:Bind ViewModel.IsLoginMode, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+
+                        <TextBox x:Name="LoginEmailBox"
+                            Header="Email"
+                            PlaceholderText="your@email.com"
+                            Text="{x:Bind ViewModel.LoginEmail, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            InputScope="EmailSmtpAddress"/>
+
+                        <PasswordBox x:Name="LoginPasswordBox"
+                                Header="Password"
+                                PlaceholderText="Enter your password"
+                                PasswordChanged="LoginPasswordBox_PasswordChanged"/>
+
+                        <Button Content="Sign In"
+                        HorizontalAlignment="Stretch"
+                        Style="{ThemeResource AccentButtonStyle}"
+                        Margin="0,4,0,0"
+                        Command="{x:Bind ViewModel.LoginCommand}"
+                        IsEnabled="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolNegation}}"/>
+                    </StackPanel>
+
+                    <!-- =====================SIGN-UP FORM===================-->
+                    <StackPanel Spacing="16"
+                        Visibility="{x:Bind ViewModel.IsSignUpMode, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+
+                        <TextBox Header="Username"
+                            PlaceholderText="Your display name"
+                            Text="{x:Bind ViewModel.SignUpUsername, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+
+                        <TextBox Header="Email"
+                            PlaceholderText="your@email.com"
+                            Text="{x:Bind ViewModel.SignUpEmail, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            InputScope="EmailSmtpAddress"/>
+
+                        <PasswordBox x:Name="SignUpPasswordBox"
+                                Header="Password"
+                                PlaceholderText="Create a password"
+                                PasswordChanged="SignUpPasswordBox_PasswordChanged"/>
+
+                        <PasswordBox x:Name="SignUpConfirmPasswordBox"
+                                Header="Confirm Password"
+                                PlaceholderText="Repeat the password"
+                                PasswordChanged="SignUpConfirmPasswordBox_PasswordChanged"/>
+
+                        <Button Content="Create Account"
+                        HorizontalAlignment="Stretch"
+                        Style="{ThemeResource AccentButtonStyle}"
+                        Margin="0,4,0,0"
+                        Command="{x:Bind ViewModel.SignUpCommand}"
+                        IsEnabled="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolNegation}}"/>
+                    </StackPanel>
+
+                    <!-- Loading ring -->
+                    <ProgressRing IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}"
+                            Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolToVis}}"
+                            HorizontalAlignment="Center"
+                            Margin="0,16,0,0"/>
+
+                    <!-- Toggle link -->
+                    <HyperlinkButton HorizontalAlignment="Center"
+                                Margin="0,20,0,0"
+                                Command="{x:Bind ViewModel.SwitchModeCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Visibility="{x:Bind ViewModel.IsLoginMode, Mode=OneWay, Converter={StaticResource BoolToVis}}"
+                                Text="Don't have an account?"/>
+                            <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Visibility="{x:Bind ViewModel.IsSignUpMode, Mode=OneWay, Converter={StaticResource BoolToVis}}"
+                                Text="Already have an account?"/>
+                            <TextBlock Visibility="{x:Bind ViewModel.IsLoginMode, Mode=OneWay, Converter={StaticResource BoolToVis}}"
+                                Text="Sign Up"/>
+                            <TextBlock Visibility="{x:Bind ViewModel.IsSignUpMode, Mode=OneWay, Converter={StaticResource BoolToVis}}"
+                                Text="Sign In"/>
+                        </StackPanel>
+                    </HyperlinkButton>
+
+                </StackPanel>
+            </Border>
+        </ScrollViewer>
     </Grid>
 </Page>
