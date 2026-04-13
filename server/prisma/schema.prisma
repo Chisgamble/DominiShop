@@ -1,0 +1,151 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Customer {
+  id            Int           @id @default(autoincrement())
+  username      String        @unique
+  email         String        @unique
+  phone         String?
+  password_hash String?
+  total_points  BigInt        @default(0)
+  tier_id       Int?
+  address       String?       @db.Text
+  created_at    DateTime      @default(now())
+  updated_at    DateTime      @updatedAt
+  deleted_at    DateTime?
+  
+  tier          CustomerTier? @relation(fields: [tier_id], references: [id])
+  orders        Order[]
+
+  @@map("customer")
+}
+
+model Food {
+  id             Int            @id @default(autoincrement())
+  name           String         @unique
+  pictures       String         @db.Text
+  quantity       Int            @default(0)
+  price          BigInt
+  sold           Int            @default(0)
+  note           String?        @db.Text
+  category_id    Int?
+  created_at     DateTime       @default(now())
+  updated_at     DateTime       @updatedAt
+
+  category       Category?      @relation(fields: [category_id], references: [id])
+  order_details  OrderDetail[]
+  inventory_logs InventoryLog[]
+
+  @@map("food")
+}
+
+model Category {
+  id         Int      @id @default(autoincrement())
+  name       String
+  note       String?  @db.Text
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  foods      Food[]
+
+  @@map("categorie")
+}
+
+model Order {
+  id             Int           @id @default(autoincrement())
+  customer_id    Int?
+  voucher_id     Int?
+  order_at       DateTime      @default(now())
+  status         String?       @db.VarChar(50)
+  total_price    BigInt?
+  shipping_fee   BigInt?
+  address        String?       @db.Text
+  payment_method String?       @db.VarChar(50)
+  created_at     DateTime      @default(now())
+  updated_at     DateTime      @updatedAt
+
+  customer       Customer?     @relation(fields: [customer_id], references: [id])
+  voucher        Voucher?      @relation(fields: [voucher_id], references: [id])
+  details        OrderDetail[]
+
+  @@map("order")
+}
+
+model OrderDetail {
+  id         Int      @id @default(autoincrement())
+  order_id   Int
+  food_id    Int?
+  quantity   Int
+  price      BigInt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  order      Order    @relation(fields: [order_id], references: [id])
+  food       Food?    @relation(fields: [food_id], references: [id])
+
+  @@map("order_detail")
+}
+
+model Voucher {
+  id          Int       @id @default(autoincrement())
+  code        String    @unique @db.VarChar(50)
+  type        String?   @db.VarChar(50)
+  value       BigInt
+  expiry_date DateTime?
+  is_active   Boolean   @default(true)
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  orders      Order[]
+
+  @@map("voucher")
+}
+
+model CustomerTier {
+  id         Int        @id @default(autoincrement())
+  name       String
+  min_point  BigInt     @default(0)
+  created_at DateTime   @default(now())
+  updated_at DateTime   @updatedAt
+  customers  Customer[]
+
+  @@map("customer_tier")
+}
+
+model Owner {
+  id            Int       @id @default(autoincrement())
+  username      String    @unique
+  email         String?   @unique
+  password_hash String?
+  refresh_token String?
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  deleted_at    DateTime?
+
+  @@map("owner")
+}
+
+model InventoryLog {
+  id          Int      @id @default(autoincrement())
+  food_id     Int
+  quantity    Int?
+  type        String?  @db.VarChar(20) // import/export
+  total_price BigInt?
+  source_from String?  @db.Text
+  note        String?  @db.Text
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  food        Food     @relation(fields: [food_id], references: [id])
+
+  @@map("inventory_log")
+}
