@@ -59,7 +59,7 @@ namespace DominiShop
 
             services.AddSingleton<IRepo<Owner, Guid>, OwnerRepository>();
             services.AddSingleton<AuthService>();
-            services.AddSingleton<AuthViewModel>();
+            services.AddTransient<AuthViewModel>();
 
             return services.BuildServiceProvider();
         }
