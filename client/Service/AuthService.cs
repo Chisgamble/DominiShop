@@ -6,56 +6,64 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Windows.System;
+using Supabase;
+using Supabase.Gotrue;
 
 namespace DominiShop.Service;
 
-public class AuthService (IRepo<Owner, Guid> ownerRepo)
+public class AuthService (Supabase.Client supabase, IRepo<Owner, int> _ownerRepo)
 {
-    public Owner? CurrentOwner { get; private set; }
-    private readonly IRepo<Owner, Guid> _ownerRepo = ownerRepo;
+    public Supabase.Gotrue.Session? CurrentSession => supabase.Auth.CurrentSession;
+    public Supabase.Gotrue.User? CurrentUser => supabase.Auth.CurrentUser;
+
     public async Task<(bool Success, string? Error)> LoginAsync(string email, string password)
     {
-        await Task.Delay(600);
-
-        var all = await _ownerRepo.GetAll();
-        var Owner = all.Items.FirstOrDefault(u =>
-            string.Equals(u.Email, email, StringComparison.OrdinalIgnoreCase));
-
-        if (Owner is null || Owner.IsDeleted)
-            return (false, "No account found with that email.");
-
-        if (Owner.Password != password)
-            return (false, "Incorrect password.");
-
-        CurrentOwner = Owner;
-        return (true, null);
-    }
-
-    public async Task<(bool Success, string? Error)> SignUpAsync(
-        string username, string email, string password)
-    {
-        await Task.Delay(600);
-
-        var all = await _ownerRepo.GetAll();
-        var exists = all.Items.Any(u =>
-            string.Equals(u.Email, email, StringComparison.OrdinalIgnoreCase));
-
-        if (exists)
-            return (false, "An account with this email already exists.");
-
-        await _ownerRepo.Insert(new Owner
+        try
         {
-            Username = username,
-            Email = email,
-            Password = password
-        });
-
-        return (true, null);
+            var response = await supabase.Auth.SignIn(email, password);
+            if (response != null)
+            {
+                return (true, null);
+            }
+            return (false, "Invalid login attempt.");
+        }
+        catch (Supabase.Gotrue.Exceptions.GotrueException ex)
+        {
+            return (false, ex.Message);
+        }
     }
 
-    public Task LogoutAsync()
+    public async Task<(bool Success, string? Error)> SignUpAsync(string username, string email, string password)
     {
-        CurrentOwner = null;
-        return Task.CompletedTask;
+        try
+        {
+            var signUpOptions = new Supabase.Gotrue.SignUpOptions
+            {
+                Data = new Dictionary<string, object> { { "username", username } }
+            };
+
+            var response = await supabase.Auth.SignUp(email, password, signUpOptions);
+
+            if (response != null)
+            {
+                //lưu người dùng mới đkí vào bảng Owner
+                var newOwner = new Owner
+                {
+                    Username = username,
+                    Email = email,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                await _ownerRepo.Insert(newOwner);
+                return (true, null);
+            }
+            return (false, "Sign up failed.");
+        }
+        catch (Exception ex)
+        {
+            return (false, ex.Message);
+        }
     }
+
+    public async Task LogoutAsync() => await supabase.Auth.SignOut();
 }

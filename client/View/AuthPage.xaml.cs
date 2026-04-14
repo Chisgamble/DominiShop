@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using System;
@@ -28,4 +29,13 @@ public sealed partial class AuthPage : Page
 
     private void SignUpConfirmPasswordBox_PasswordChanged(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
         => ViewModel.SignUpConfirmPassword = ((PasswordBox)sender).Password;
+
+    private void OnKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == Windows.System.VirtualKey.Enter)
+        {
+            if (ViewModel.IsLoginMode) ViewModel.LoginCommand.Execute(null);
+            else ViewModel.SignUpCommand.Execute(null);
+        }
+    }
 }

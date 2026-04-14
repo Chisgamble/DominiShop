@@ -4,6 +4,7 @@ using DominiShop.Repository;
 using DominiShop.Service;
 using DominiShop.View;
 using DominiShop.ViewModel;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -14,6 +15,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using Microsoft.UI.Xaml.Shapes;
 using Serilog;
+using Supabase;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -58,13 +60,21 @@ namespace DominiShop
         {
             var services = new ServiceCollection();
 
-            // Đăng ký DbContext với chuỗi kết nối Supabase
             services.AddDbContext<PostgresContext>();
-            // Đăng ký Repo
-            services.AddScoped<IRepo<Owner, int>, OwnerRepository>();
 
-            services.AddSingleton<IRepo<Owner, int>, OwnerRepository>();
-            services.AddSingleton<AuthService>();
+            var configuration = new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .Build();
+
+            var url = configuration["Supabase:Url"];
+            var key = configuration["Supabase:Key"];
+            var options = new SupabaseOptions { AutoConnectRealtime = true };
+
+            services.AddSingleton(provider => new Supabase.Client(url, key, options));
+
+            services.AddScoped<IRepo<Owner, int>, OwnerRepository>();
+            services.AddScoped<AuthService>();
             services.AddTransient<AuthViewModel>();
 
             return services.BuildServiceProvider();

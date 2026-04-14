@@ -85,7 +85,8 @@
                         <PasswordBox x:Name="LoginPasswordBox"
                                 Header="Password"
                                 PlaceholderText="Enter your password"
-                                PasswordChanged="LoginPasswordBox_PasswordChanged"/>
+                                PasswordChanged="LoginPasswordBox_PasswordChanged"
+                                KeyDown="OnKeyDown"/>
 
                         <Button Content="Sign In"
                         HorizontalAlignment="Stretch"
@@ -116,7 +117,8 @@
                         <PasswordBox x:Name="SignUpConfirmPasswordBox"
                                 Header="Confirm Password"
                                 PlaceholderText="Repeat the password"
-                                PasswordChanged="SignUpConfirmPasswordBox_PasswordChanged"/>
+                                PasswordChanged="SignUpConfirmPasswordBox_PasswordChanged"
+                                KeyDown="OnKeyDown"/>
 
                         <Button Content="Create Account"
                         HorizontalAlignment="Stretch"

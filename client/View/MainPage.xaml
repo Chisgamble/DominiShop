@@ -7,6 +7,12 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-   
+    <Grid>
+        <TextBlock Text="MainPage" 
+                   HorizontalAlignment="Center" 
+                   VerticalAlignment="Center"
+                   FontSize="30"
+                   FontWeight="Bold"/>
+    </Grid>
 </Page>
 

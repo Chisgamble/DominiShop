@@ -52,14 +52,18 @@ public partial class AuthViewModel(AuthService authService) : BaseViewModel
     {
         if (string.IsNullOrWhiteSpace(LoginEmail) || string.IsNullOrWhiteSpace(LoginPassword))
         {
-            SetError("Please fill in all fields.");
+            SetError("Email and password are required.");
             return;
         }
 
         await RunAsync(async () =>
         {
             var (ok, err) = await _auth.LoginAsync(LoginEmail, LoginPassword);
-            if (!ok) { SetError(err); return; }
+            if (!ok)
+            {
+                SetError(err);
+                return;
+            }
             App.NavigateToMain();
         });
     }
@@ -92,7 +96,7 @@ public partial class AuthViewModel(AuthService authService) : BaseViewModel
         });
     }
 
-    // ── Helpers ───────────────────────────────────────────────
+    // Helpers
     private async Task RunAsync(Func<Task> action)
     {
         IsLoading = true;

@@ -19,3 +19,5 @@ _UpgradeReport_Files/
 [Oo]bj/
 *.user
 *.suo
+
+appsettings.json

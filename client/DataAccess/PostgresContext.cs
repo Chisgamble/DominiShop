@@ -62,12 +62,12 @@ public partial class PostgresContext : DbContext
                 .HasColumnName("id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp(3) without time zone")
-                .HasColumnName("created_at");
+                .HasColumnType("timestamp(3) with time zone")
+                .HasColumnName("created_at").ValueGeneratedOnAdd();;
             entity.Property(e => e.Name).HasColumnName("name");
             entity.Property(e => e.Note).HasColumnName("note");
             entity.Property(e => e.UpdatedAt)
-                .HasColumnType("timestamp(3) without time zone")
+                .HasColumnType("timestamp(3) with time zone")
                 .HasColumnName("updated_at");
         });
 
@@ -85,10 +85,10 @@ public partial class PostgresContext : DbContext
             entity.Property(e => e.Address).HasColumnName("address");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp(3) without time zone")
-                .HasColumnName("created_at");
+                .HasColumnType("timestamp(3) with time zone")
+                .HasColumnName("created_at").ValueGeneratedOnAdd();;
             entity.Property(e => e.DeletedAt)
-                .HasColumnType("timestamp(3) without time zone")
+                .HasColumnType("timestamp(3) with time zone")
                 .HasColumnName("deleted_at");
             entity.Property(e => e.Email).HasColumnName("email");
             entity.Property(e => e.PasswordHash).HasColumnName("password_hash");
@@ -96,7 +96,7 @@ public partial class PostgresContext : DbContext
             entity.Property(e => e.TierId).HasColumnName("tier_id");
             entity.Property(e => e.TotalPoints).HasColumnName("total_points");
             entity.Property(e => e.UpdatedAt)
-                .HasColumnType("timestamp(3) without time zone")
+                .HasColumnType("timestamp(3) with time zone")
                 .HasColumnName("updated_at");
             entity.Property(e => e.Username).HasColumnName("username");
 
@@ -115,12 +115,12 @@ public partial class PostgresContext : DbContext
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp(3) without time zone")
-                .HasColumnName("created_at");
+                .HasColumnType("timestamp(3) with time zone")
+                .HasColumnName("created_at").ValueGeneratedOnAdd();;
             entity.Property(e => e.MinPoint).HasColumnName("min_point");
             entity.Property(e => e.Name).HasColumnName("name");
             entity.Property(e => e.UpdatedAt)
-                .HasColumnType("timestamp(3) without time zone")
+                .HasColumnType("timestamp(3) with time zone")
                 .HasColumnName("updated_at");
         });
 
@@ -136,8 +136,8 @@ public partial class PostgresContext : DbContext
             entity.Property(e => e.CategoryId).HasColumnName("category_id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp(3) without time zone")
-                .HasColumnName("created_at");
+                .HasColumnType("timestamp(3) with time zone")
+                .HasColumnName("created_at").ValueGeneratedOnAdd();;
             entity.Property(e => e.Name).HasColumnName("name");
             entity.Property(e => e.Note).HasColumnName("note");
             entity.Property(e => e.Pictures).HasColumnName("pictures");
@@ -145,7 +145,7 @@ public partial class PostgresContext : DbContext
             entity.Property(e => e.Quantity).HasColumnName("quantity");
             entity.Property(e => e.Sold).HasColumnName("sold");
             entity.Property(e => e.UpdatedAt)
-                .HasColumnType("timestamp(3) without time zone")
+                .HasColumnType("timestamp(3) with time zone")
                 .HasColumnName("updated_at");
 
             entity.HasOne(d => d.Category).WithMany(p => p.Foods)
@@ -163,8 +163,8 @@ public partial class PostgresContext : DbContext
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp(3) without time zone")
-                .HasColumnName("created_at");
+                .HasColumnType("timestamp(3) with time zone")
+                .HasColumnName("created_at").ValueGeneratedOnAdd();;
             entity.Property(e => e.FoodId).HasColumnName("food_id");
             entity.Property(e => e.Note).HasColumnName("note");
             entity.Property(e => e.Quantity).HasColumnName("quantity");
@@ -174,7 +174,7 @@ public partial class PostgresContext : DbContext
                 .HasMaxLength(20)
                 .HasColumnName("type");
             entity.Property(e => e.UpdatedAt)
-                .HasColumnType("timestamp(3) without time zone")
+                .HasColumnType("timestamp(3) with time zone")
                 .HasColumnName("updated_at");
 
             entity.HasOne(d => d.Food).WithMany(p => p.InventoryLogs)
@@ -193,12 +193,12 @@ public partial class PostgresContext : DbContext
             entity.Property(e => e.Address).HasColumnName("address");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp(3) without time zone")
-                .HasColumnName("created_at");
+                .HasColumnType("timestamp(3) with time zone")
+                .HasColumnName("created_at").ValueGeneratedOnAdd();;
             entity.Property(e => e.CustomerId).HasColumnName("customer_id");
             entity.Property(e => e.OrderAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp(3) without time zone")
+                .HasColumnType("timestamp(3) with time zone")
                 .HasColumnName("order_at");
             entity.Property(e => e.PaymentMethod)
                 .HasMaxLength(50)
@@ -209,7 +209,7 @@ public partial class PostgresContext : DbContext
                 .HasColumnName("status");
             entity.Property(e => e.TotalPrice).HasColumnName("total_price");
             entity.Property(e => e.UpdatedAt)
-                .HasColumnType("timestamp(3) without time zone")
+                .HasColumnType("timestamp(3) with time zone")
                 .HasColumnName("updated_at");
             entity.Property(e => e.VoucherId).HasColumnName("voucher_id");
 
@@ -233,14 +233,14 @@ public partial class PostgresContext : DbContext
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp(3) without time zone")
-                .HasColumnName("created_at");
+                .HasColumnType("timestamp(3) with time zone")
+                .HasColumnName("created_at").ValueGeneratedOnAdd();
             entity.Property(e => e.FoodId).HasColumnName("food_id");
             entity.Property(e => e.OrderId).HasColumnName("order_id");
             entity.Property(e => e.Price).HasColumnName("price");
             entity.Property(e => e.Quantity).HasColumnName("quantity");
             entity.Property(e => e.UpdatedAt)
-                .HasColumnType("timestamp(3) without time zone")
+                .HasColumnType("timestamp(3) with time zone")
                 .HasColumnName("updated_at");
 
             entity.HasOne(d => d.Food).WithMany(p => p.OrderDetails)
@@ -268,16 +268,16 @@ public partial class PostgresContext : DbContext
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp(3) without time zone")
-                .HasColumnName("created_at");
+                .HasColumnType("timestamp(3) with time zone")
+                .HasColumnName("created_at").ValueGeneratedOnAdd();
             entity.Property(e => e.DeletedAt)
-                .HasColumnType("timestamp(3) without time zone")
+                .HasColumnType("timestamp(3) with time zone")
                 .HasColumnName("deleted_at");
             entity.Property(e => e.Email).HasColumnName("email");
             entity.Property(e => e.PasswordHash).HasColumnName("password_hash");
             entity.Property(e => e.RefreshToken).HasColumnName("refresh_token");
             entity.Property(e => e.UpdatedAt)
-                .HasColumnType("timestamp(3) without time zone")
+                .HasColumnType("timestamp(3) with time zone")
                 .HasColumnName("updated_at");
             entity.Property(e => e.Username).HasColumnName("username");
         });
@@ -296,10 +296,10 @@ public partial class PostgresContext : DbContext
                 .HasColumnName("code");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp(3) without time zone")
-                .HasColumnName("created_at");
+                .HasColumnType("timestamp(3) with time zone")
+                .HasColumnName("created_at").ValueGeneratedOnAdd();;
             entity.Property(e => e.ExpiryDate)
-                .HasColumnType("timestamp(3) without time zone")
+                .HasColumnType("timestamp(3) with time zone")
                 .HasColumnName("expiry_date");
             entity.Property(e => e.IsActive)
                 .HasDefaultValue(true)
@@ -308,7 +308,7 @@ public partial class PostgresContext : DbContext
                 .HasMaxLength(50)
                 .HasColumnName("type");
             entity.Property(e => e.UpdatedAt)
-                .HasColumnType("timestamp(3) without time zone")
+                .HasColumnType("timestamp(3) with time zone")
                 .HasColumnName("updated_at");
             entity.Property(e => e.Value).HasColumnName("value");
         });

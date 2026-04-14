@@ -3,7 +3,7 @@ using System.ComponentModel;
 
 namespace DominiShop.Model
 {
-    public class BaseModel : INotifyPropertyChanged, ICloneable
+    public partial class BaseModel : INotifyPropertyChanged, ICloneable
     {
         public event PropertyChangedEventHandler? PropertyChanged;
 

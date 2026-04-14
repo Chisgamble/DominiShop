@@ -10,7 +10,7 @@ using DominiShop.DataAccess;
 
 namespace DominiShop.Repository;
 
-public class OwnerRepository : IRepo<Owner, Guid>
+public class OwnerRepository : IRepo<Owner, int>
 {
     private readonly PostgresContext _context;
 
@@ -19,52 +19,105 @@ public class OwnerRepository : IRepo<Owner, Guid>
         _context = context;
     }
 
-    public Task<PagedResult<Owner>> GetAll(PagingRequest? info = null)
+    public async Task<PagedResult<Owner>> GetAll(PagingRequest? info = null)
     {
-        info ??= new();
-        var items = _users
-            .Skip((info.PageNumber - 1) * info.PageSize)
-            .Take(info.PageSize)
-            .ToList();
+        try { 
+            info ??= new();
+            var query = _context.Owners.Where(o => o.DeletedAt == null);
+            var total = await query.CountAsync();
 
-        return Task.FromResult(new PagedResult<Owner>
-        {
-            Items = items,
-            Pagination = new PagingMetadata
+            var items = await query
+                    .OrderBy(o => o.Id)
+                    .Skip((info.PageNumber - 1) * info.PageSize)
+                    .Take(info.PageSize)
+                    .ToListAsync();
+
+            return new PagedResult<Owner>
             {
-                PageNumber = info.PageNumber,
-                PageSize = info.PageSize,
-                TotalItems = _users.Count
-            }
-        });
+                Items = items,
+                Pagination = new PagingMetadata
+                {
+                    PageNumber = info.PageNumber,
+                    PageSize = info.PageSize,
+                    TotalItems = total
+                }
+            };
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Lỗi khi lấy danh sách Owner: {ex.Message}");
+        }
     }
 
-    public Task<Owner?> GetById(Guid id)
-        => Task.FromResult(_users.FirstOrDefault(u => u.Id == id));
-
-    public Task<Owner> Insert(Owner item)
+    public async Task<Owner?> GetById(int id)
     {
-        item.Id = Guid.NewGuid();
-        item.CreatedAt = DateTime.Now;
-        item.UpdatedAt = DateTime.Now;
-        _users.Add(item);
-        return Task.FromResult(item);
+        try {
+            return await _context.Owners
+                    .FirstOrDefaultAsync(u => u.Id == id && u.DeletedAt == null);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Lỗi khi tìm Owner theo ID {id}: {ex.Message}");
+        }
+    }
+        
+
+    public async Task<Owner> Insert(Owner item)
+    {
+        try
+        {
+            _context.Owners.Add(item);
+            await _context.SaveChangesAsync();
+            return item;
+        }
+        catch (DbUpdateException ex)
+        {
+            var message = ex.InnerException?.Message ?? ex.Message;
+            throw new Exception($"Lỗi lưu Database: {message}");
+        }
     }
 
-    public Task<bool> UpdateByID(Owner item)
+    public async Task<bool> UpdateByID(Owner item)
     {
-        var idx = _users.FindIndex(u => u.Id == item.Id);
-        if (idx == -1) return Task.FromResult(false);
-        item.UpdatedAt = DateTime.Now;
-        _users[idx] = item;
-        return Task.FromResult(true);
+        try
+        {
+            var existingOwner = await _context.Owners.FindAsync(item.Id);
+            if (existingOwner == null || existingOwner.DeletedAt != null) return false;
+
+            existingOwner.Username = item.Username;
+            existingOwner.Email = item.Email;
+            existingOwner.PasswordHash = item.PasswordHash;
+            existingOwner.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        catch (DbUpdateException ex)
+        {
+            var message = ex.InnerException?.Message ?? ex.Message;
+            throw new Exception($"Lỗi Database khi cập nhật Owner: {message}");
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Lỗi không xác định khi cập nhật Owner: {ex.Message}");
+        }
     }
 
-    public Task<bool> DeleteByID(Guid id)
+    public async Task<bool> DeleteByID(int id)
     {
-        var user = _users.FirstOrDefault(u => u.Id == id);
-        if (user is null) return Task.FromResult(false);
-        user.DeletedAt = DateTime.Now;
-        return Task.FromResult(true);
+        try
+        {
+            var owner = await _context.Owners.FindAsync(id);
+            if (owner == null) return false;
+
+            owner.DeletedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Lỗi khi xóa Owner (ID: {id}): {ex.Message}");
+        }
     }
 }
