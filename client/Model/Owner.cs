@@ -1,23 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace DominiShop.Model
+namespace DominiShop.Model;
+
+public partial class Owner
 {
-    public class Owner
-    {
-        public Guid Id { get; set; } = Guid.NewGuid();
-        public string Username { get; set; } = string.Empty;
+    public int Id { get; set; }
 
-        // mock only password
-        public string Password { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        public string? Phone { get; set; }
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
-        public DateTime UpdatedAt { get; set; } = DateTime.Now;
-        public DateTime? DeletedAt { get; set; }
-        public bool IsDeleted => DeletedAt.HasValue;
-    }
+    public string Username { get; set; } = null!;
+
+    public string? Email { get; set; }
+
+    public string? PasswordHash { get; set; }
+
+    public string? RefreshToken { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
+
+    public DateTime? DeletedAt { get; set; }
 }

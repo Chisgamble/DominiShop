@@ -1,4 +1,5 @@
-﻿using DominiShop.Model;
+﻿using DominiShop.DataAccess;
+using DominiShop.Model;
 using DominiShop.Repository;
 using DominiShop.Service;
 using DominiShop.View;
@@ -57,7 +58,12 @@ namespace DominiShop
         {
             var services = new ServiceCollection();
 
-            services.AddSingleton<IRepo<Owner, Guid>, OwnerRepository>();
+            // Đăng ký DbContext với chuỗi kết nối Supabase
+            services.AddDbContext<PostgresContext>();
+            // Đăng ký Repo
+            services.AddScoped<IRepo<Owner, int>, OwnerRepository>();
+
+            services.AddSingleton<IRepo<Owner, int>, OwnerRepository>();
             services.AddSingleton<AuthService>();
             services.AddTransient<AuthViewModel>();
 

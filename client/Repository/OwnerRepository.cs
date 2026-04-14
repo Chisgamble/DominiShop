@@ -5,22 +5,19 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Windows.System;
 using System.Linq;
+using Microsoft.EntityFrameworkCore;
+using DominiShop.DataAccess;
 
 namespace DominiShop.Repository;
 
 public class OwnerRepository : IRepo<Owner, Guid>
 {
-    private readonly List<Owner> _users =
-    [
-        new Owner
-        {
-            Id       = Guid.NewGuid(),
-            Username = "DoMini",
-            Email    = "admin@gmail.com",
-            Password = "admin123",
-            Phone    = "0901234567"
-        }
-    ];
+    private readonly PostgresContext _context;
+
+    public OwnerRepository(PostgresContext context)
+    {
+        _context = context;
+    }
 
     public Task<PagedResult<Owner>> GetAll(PagingRequest? info = null)
     {
