@@ -15,5 +15,9 @@ public partial class Category
 
     public DateTime? UpdatedAt { get; set; }
 
-    public virtual ICollection<Food> Foods { get; set; } = new List<Food>();
+    public int? OwnerId { get; set; }
+
+    public virtual Owner? Owner { get; set; }
+
+    public virtual ICollection<Product> Products { get; set; } = new List<Product>();
 }

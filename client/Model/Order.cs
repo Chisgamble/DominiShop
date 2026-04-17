@@ -27,9 +27,13 @@ public partial class Order
 
     public DateTime? UpdatedAt { get; set; }
 
-    public virtual Customer? Customer { get; set; }
+    public int? OwnerId { get; set; }
 
     public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
+
+    public virtual ICollection<OrderVoucher> OrderVouchers { get; set; } = new List<OrderVoucher>();
+
+    public virtual Owner? Owner { get; set; }
 
     public virtual Voucher? Voucher { get; set; }
 }

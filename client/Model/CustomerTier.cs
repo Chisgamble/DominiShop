@@ -15,5 +15,11 @@ public partial class CustomerTier
 
     public DateTime? UpdatedAt { get; set; }
 
+    public int? OwnerId { get; set; }
+
+    public decimal? Percent { get; set; }
+
     public virtual ICollection<Customer> Customers { get; set; } = new List<Customer>();
+
+    public virtual Owner? Owner { get; set; }
 }

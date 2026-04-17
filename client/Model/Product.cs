@@ -3,17 +3,17 @@ using System.Collections.Generic;
 
 namespace DominiShop.Model;
 
-public partial class Food
+public partial class Product
 {
     public int Id { get; set; }
 
     public string Name { get; set; } = null!;
 
-    public string? Pictures { get; set; } = null!;
+    public string? Pictures { get; set; }
 
     public int Quantity { get; set; }
 
-    public long Price { get; set; }
+    public decimal Price { get; set; }
 
     public int Sold { get; set; }
 
@@ -25,7 +25,13 @@ public partial class Food
 
     public DateTime? UpdatedAt { get; set; }
 
+    public int? OwnerId { get; set; }
+
+    public bool? IsDeleted { get; set; }
+
     public virtual Category? Category { get; set; }
 
     public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
+
+    public virtual Owner? Owner { get; set; }
 }
