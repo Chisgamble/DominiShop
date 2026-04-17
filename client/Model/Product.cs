@@ -29,6 +29,8 @@ public partial class Product
 
     public bool? IsDeleted { get; set; }
 
+    public decimal BasePrice { get; set; }
+
     public virtual Category? Category { get; set; }
 
     public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();

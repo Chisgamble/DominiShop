@@ -276,6 +276,7 @@ public partial class PostgresContext : DbContext
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("nextval('food_id_seq'::regclass)")
                 .HasColumnName("id");
+            entity.Property(e => e.BasePrice).HasColumnName("base_price");
             entity.Property(e => e.CategoryId).HasColumnName("category_id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
