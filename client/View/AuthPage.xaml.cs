@@ -13,8 +13,7 @@ namespace DominiShop.View;
 
 public sealed partial class AuthPage : Page
 {
-    public AuthViewModel ViewModel { get; } =
-        App.Services.GetRequiredService<AuthViewModel>();
+    public AuthViewModel ViewModel { get; } = App.Services.GetRequiredService<AuthViewModel>();
 
     public AuthPage()
     {

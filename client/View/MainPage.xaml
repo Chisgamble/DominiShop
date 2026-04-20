@@ -7,12 +7,46 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <Grid>
-        <TextBlock Text="MainPage" 
-                   HorizontalAlignment="Center" 
-                   VerticalAlignment="Center"
-                   FontSize="30"
-                   FontWeight="Bold"/>
-    </Grid>
+
+    <NavigationView x:Name="MainNavView"
+                    ItemInvoked="MainNavView_ItemInvoked"
+                    IsPaneToggleButtonVisible="True"
+                    IsBackButtonVisible="Collapsed"
+                    IsSettingsVisible="False">
+
+        <NavigationView.PaneHeader>
+            <Grid x:Name="PaneHeaderGrid" 
+              Padding="12,20,12,20"
+              HorizontalAlignment="Stretch">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <PersonPicture DisplayName="{x:Bind ViewModel.CurrentUserName, Mode=OneWay}" 
+                               ProfilePicture="{x:Bind ViewModel.ProfileImage, Mode=OneWay}"
+                               Width="40" Height="40"
+                               VerticalAlignment="Center"/>
+
+                    <StackPanel VerticalAlignment="Center" 
+                            Visibility="{x:Bind MainNavView.IsPaneOpen, Mode=OneWay}">
+                        <TextBlock Text="{x:Bind ViewModel.CurrentUserName, Mode=OneWay}" 
+                               Style="{StaticResource BodyStrongTextBlockStyle}"
+                               MaxLines="1" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Text="{x:Bind ViewModel.CurrentUserEmail, Mode=OneWay}" 
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"
+                               MaxLines="1" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </NavigationView.PaneHeader>
+
+        <NavigationView.MenuItems>
+            <NavigationViewItem Content="Thống kê" Icon="FourBars" Tag="StatisticsPage" />
+            <NavigationViewItem Content="Kho hàng" Icon="AllApps" Tag="InventoryPage" />
+        </NavigationView.MenuItems>
+
+        <Frame x:Name="ContentFrame" />
+
+    </NavigationView>
+
+
 </Page>
 

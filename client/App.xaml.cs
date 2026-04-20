@@ -60,7 +60,7 @@ namespace DominiShop
         {
             var services = new ServiceCollection();
 
-            services.AddDbContext<PostgresContext>();
+            services.AddDbContext<PostgresContext>(ServiceLifetime.Transient);
 
             var configuration = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
@@ -71,11 +71,15 @@ namespace DominiShop
             var key = configuration["Supabase:Key"];
             var options = new SupabaseOptions { AutoConnectRealtime = true };
 
-            services.AddSingleton(provider => new Supabase.Client(url, key, options));
+            services.AddSingleton(provider => new Supabase.Client(url!, key, options));
 
-            services.AddScoped<IRepo<Owner, int>, OwnerRepository>();
-            services.AddScoped<AuthService>();
+            services.AddSingleton<INavigationService, NavigationService>();
+
+            services.AddTransient<IRepo<Owner, int>, OwnerRepository>();
+            services.AddSingleton<AuthService>();
             services.AddTransient<AuthViewModel>();
+
+            services.AddSingleton<MainViewModel>();
 
             return services.BuildServiceProvider();
         }
@@ -94,6 +98,10 @@ namespace DominiShop
         {
             if (_window is MainWindow mw)
                 mw.Navigate(typeof(MainPage));
+            else if (_window?.Content is Frame rootFrame)
+            {
+                rootFrame.Navigate(typeof(MainPage));
+            }
         }
     }
 }

@@ -8,7 +8,7 @@ namespace DominiShop.Repository
 {
     public class PagedResult<TData> where TData : class
     {
-        public IReadOnlyList<TData> Items { get; init; }
+        public IReadOnlyList<TData>? Items { get; init; }
         public PagingMetadata Pagination { get; set; } = new();
     }
 
