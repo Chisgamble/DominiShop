@@ -73,12 +73,20 @@ namespace DominiShop
 
             services.AddSingleton(provider => new Supabase.Client(url!, key, options));
 
+            // navigation
             services.AddSingleton<INavigationService, NavigationService>();
 
+            // auth and owner
             services.AddTransient<IRepo<Owner, int>, OwnerRepository>();
             services.AddSingleton<AuthService>();
             services.AddTransient<AuthViewModel>();
+            
+            // voucher
+            services.AddTransient<IRepo<Voucher, int>, VoucherRepository>();
+            services.AddTransient<VoucherService>();
+            services.AddTransient<VoucherViewModel>();
 
+            // main
             services.AddSingleton<MainViewModel>();
 
             return services.BuildServiceProvider();

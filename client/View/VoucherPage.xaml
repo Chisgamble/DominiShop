@@ -1,0 +1,370 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="DominiShop.View.VoucherPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:DominiShop.View"
+    xmlns:conv="using:DominiShop.Converter"
+    xmlns:model="using:DominiShop.Model"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="Transparent">
+
+    <Page.Resources>
+        <conv:BoolToVisibilityConverter        x:Key="BoolToVis"/>
+        <conv:InverseBoolToVisibilityConverter x:Key="InvBoolToVis"/>
+        <conv:BoolNegationConverter            x:Key="BoolNegation"/>
+    </Page.Resources>
+
+    <!-- two-column layout — list on left, form panel on right -->
+    <Grid Padding="28,24,28,24" ColumnSpacing="20">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="360"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- LEFT COLUMN — header + list -->
+        <Grid Grid.Column="0" RowSpacing="16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header row -->
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                    <TextBlock Text="Vouchers"
+                               Style="{ThemeResource TitleLargeTextBlockStyle}"/>
+                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               Margin="0,2,0,0">
+                        <Run Text="{x:Bind ViewModel.Vouchers.Count, Mode=OneWay}"/>
+                        <Run Text="vouchers on this page"/>
+                    </TextBlock>
+                </StackPanel>
+
+                <Button Grid.Column="1"
+                        Style="{ThemeResource AccentButtonStyle}"
+                        Command="{x:Bind ViewModel.PrepareCreateCommand}"
+                        VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE710;" FontSize="14"/>
+                        <TextBlock Text="New Voucher"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
+
+            <!-- InfoBars -->
+            <StackPanel Grid.Row="1" Spacing="8">
+                <InfoBar IsOpen="{x:Bind ViewModel.HasError, Mode=OneWay}"
+                         Severity="Error"
+                         Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
+                         IsClosable="False"/>
+                <InfoBar IsOpen="{x:Bind ViewModel.HasSuccess, Mode=OneWay}"
+                         Severity="Success"
+                         Message="{x:Bind ViewModel.SuccessMessage, Mode=OneWay}"
+                         IsClosable="False"/>
+            </StackPanel>
+
+            <!-- Loading / empty / list -->
+            <Grid Grid.Row="2">
+
+                <!-- Loading spinner (overlays list while fetching) -->
+                <StackPanel HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Spacing="12"
+                            Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                    <ProgressRing IsActive="True" Width="40" Height="40"/>
+                    <TextBlock Text="Loading vouchers…"
+                               HorizontalAlignment="Center"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                </StackPanel>
+
+                <!-- Empty state -->
+                <StackPanel HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Spacing="12"
+                            Visibility="{x:Bind ViewModel.IsEmpty, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                    <FontIcon Glyph="&#xE8C8;"
+                              FontSize="48"
+                              Foreground="{ThemeResource TextFillColorDisabledBrush}"/>
+                    <TextBlock Text="No vouchers yet"
+                               Style="{ThemeResource SubtitleTextBlockStyle}"
+                               HorizontalAlignment="Center"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    <TextBlock Text="Click &quot;New Voucher&quot; to create your first one."
+                               HorizontalAlignment="Center"
+                               Foreground="{ThemeResource TextFillColorTertiaryBrush}"/>
+                </StackPanel>
+
+                <!-- Voucher list -->
+                <ListView x:Name="VoucherList"
+                          ItemsSource="{x:Bind ViewModel.Vouchers, Mode=OneWay}"
+                          SelectedItem="{x:Bind ViewModel.SelectedVoucher, Mode=TwoWay}"
+                          SelectionMode="Single"
+                          IsItemClickEnabled="True"
+                          ItemClick="VoucherList_ItemClick"
+                          Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource InvBoolToVis}}">
+
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem" BasedOn="{StaticResource DefaultListViewItemStyle}">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                            <Setter Property="Padding" Value="0"/>
+                            <Setter Property="Margin" Value="0,0,0,8"/>
+                        </Style>
+                    </ListView.ItemContainerStyle>
+
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="model:Voucher">
+                            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="16,14">
+
+                                <Grid ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Icon badge -->
+                                    <Border Grid.Column="0"
+                                            Width="44" Height="44"
+                                            CornerRadius="8"
+                                            Background="{ThemeResource AccentFillColorDefaultBrush}"
+                                            VerticalAlignment="Center">
+                                        <FontIcon Glyph="&#xE8C8;"
+                                                  FontSize="18"
+                                                  Foreground="White"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"/>
+                                    </Border>
+
+                                    <!-- Code + meta -->
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                        <TextBlock Text="{x:Bind Code}"
+                                                   Style="{ThemeResource BodyStrongTextBlockStyle}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                       Style="{ThemeResource CaptionTextBlockStyle}">
+                                                <Run Text="{x:Bind Percent}"/><Run Text="% off"/>
+                                            </TextBlock>
+                                            <TextBlock Text="·"
+                                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                                       Style="{ThemeResource CaptionTextBlockStyle}"/>
+                                            <TextBlock Text="{x:Bind Type}"
+                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                       Style="{ThemeResource CaptionTextBlockStyle}"/>
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <!-- Active badge + expiry -->
+                                    <StackPanel Grid.Column="2"
+                                                VerticalAlignment="Center"
+                                                HorizontalAlignment="Right"
+                                                Spacing="4">
+                                        <Border CornerRadius="4"
+                                                Padding="8,3"
+                                                HorizontalAlignment="Right">
+                                            <Border.Background>
+                                                <!-- green when active, muted when inactive -->
+                                                <SolidColorBrush Color="{ThemeResource SystemColorHighlightColor}"
+                                                                 Opacity="0.15"/>
+                                            </Border.Background>
+                                            <TextBlock Style="{ThemeResource CaptionTextBlockStyle}"
+                                                       FontWeight="SemiBold">
+                                                <!-- Active / Inactive text via converter -->
+                                                <Run Text="Active"/>
+                                            </TextBlock>
+                                        </Border>
+                                        <TextBlock Style="{ThemeResource CaptionTextBlockStyle}"
+                                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                                   HorizontalAlignment="Right">
+                                            <Run Text="Exp: "/>
+                                            <Run Text="{x:Bind ExpiryDate}"/>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Grid>
+
+            <!-- Pagination footer -->
+            <Grid Grid.Row="3">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Button Grid.Column="0"
+                        HorizontalAlignment="Left"
+                        Command="{x:Bind ViewModel.PreviousPageCommand}"
+                        IsEnabled="{x:Bind ViewModel.HasPrevious, Mode=OneWay}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon Glyph="&#xE76B;" FontSize="12"/>
+                        <TextBlock Text="Previous"/>
+                    </StackPanel>
+                </Button>
+
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal"
+                            Spacing="6"
+                            VerticalAlignment="Center">
+                    <TextBlock Text="{x:Bind ViewModel.CurrentPage, Mode=OneWay}"
+                               Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                    <TextBlock Text="of"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    <TextBlock Text="{x:Bind ViewModel.TotalPages, Mode=OneWay}"
+                               Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                </StackPanel>
+
+                <Button Grid.Column="2"
+                        HorizontalAlignment="Right"
+                        Command="{x:Bind ViewModel.NextPageCommand}"
+                        IsEnabled="{x:Bind ViewModel.HasNext, Mode=OneWay}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="Next"/>
+                        <FontIcon Glyph="&#xE76C;" FontSize="12"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Grid>
+
+        <!-- RIGHT COLUMN — create / edit form panel -->
+        <Border Grid.Column="1"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="12"
+                Padding="24,24">
+
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="20">
+
+                    <!-- Panel title -->
+                    <StackPanel Spacing="2">
+                        <TextBlock Style="{ThemeResource SubtitleTextBlockStyle}">
+                            <Run Text="{x:Bind ViewModel.FormPanelTitle, Mode=OneWay}"/>
+                        </TextBlock>
+                        <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                   Text="Fill in the details below."/>
+                    </StackPanel>
+
+                    <Rectangle Height="1"
+                               Fill="{ThemeResource DividerStrokeColorDefaultBrush}"
+                               HorizontalAlignment="Stretch"/>
+
+                    <!-- Code -->
+                    <TextBox Header="Voucher Code *"
+                             PlaceholderText="e.g. SUMMER25"
+                             Text="{x:Bind ViewModel.FormCode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             CharacterCasing="Upper"
+                             IsEnabled="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolNegation}}"/>
+
+                    <!-- Type -->
+                    <ComboBox Header="Type"
+                              PlaceholderText="Select a type"
+                              HorizontalAlignment="Stretch"
+                              SelectedValue="{x:Bind ViewModel.FormType, Mode=TwoWay}"
+                              IsEnabled="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolNegation}}">
+                        <ComboBoxItem Content="percent" Tag="percent"/>
+                        <ComboBoxItem Content="fixed"   Tag="fixed"/>
+                        <ComboBoxItem Content="free_shipping" Tag="free_shipping"/>
+                    </ComboBox>
+
+                    <!-- Percent -->
+                    <TextBox Header="Discount Percent"
+                             PlaceholderText="0 – 100"
+                             Text="{x:Bind ViewModel.FormPercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             InputScope="Number"
+                             IsEnabled="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolNegation}}"/>
+
+                    <!-- Max per person -->
+                    <TextBox Header="Max Uses per Person"
+                             PlaceholderText="Leave blank for unlimited"
+                             Text="{x:Bind ViewModel.FormMaxPerPerson, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             InputScope="Number"
+                             IsEnabled="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolNegation}}"/>
+
+                    <!-- Expiry date -->
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Expiry Date"
+                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                        <CalendarDatePicker PlaceholderText="Select expiry date"
+                                           HorizontalAlignment="Stretch"
+                                           Date="{x:Bind ViewModel.FormExpiryDate, Mode=TwoWay}"
+                                           IsEnabled="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolNegation}}"/>
+                    </StackPanel>
+
+                    <!-- Is Active toggle (edit mode only) -->
+                    <ToggleSwitch Header="Active"
+                                  IsOn="{x:Bind ViewModel.FormIsActive, Mode=TwoWay}"
+                                  OnContent="Yes" OffContent="No"
+                                  Visibility="{x:Bind ViewModel.IsEditMode, Mode=OneWay, Converter={StaticResource BoolToVis}}"
+                                  IsEnabled="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolNegation}}"/>
+
+                    <Rectangle Height="1"
+                               Fill="{ThemeResource DividerStrokeColorDefaultBrush}"
+                               HorizontalAlignment="Stretch"/>
+
+                    <!-- Action buttons -->
+                    <StackPanel Spacing="10">
+
+                        <!-- Save -->
+                        <Button HorizontalAlignment="Stretch"
+                                Style="{ThemeResource AccentButtonStyle}"
+                                Command="{x:Bind ViewModel.SaveCommand}"
+                                IsEnabled="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolNegation}}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <ProgressRing IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}"
+                                              Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolToVis}}"
+                                              Width="16" Height="16"/>
+                                <FontIcon Glyph="&#xE74E;" FontSize="14"
+                                          Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource InvBoolToVis}}"/>
+                                <TextBlock Text="{x:Bind ViewModel.SaveButtonLabel, Mode=OneWay}"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Delete (edit mode only) -->
+                        <Button x:Name="DeleteButton"
+                                HorizontalAlignment="Stretch"
+                                Visibility="{x:Bind ViewModel.IsEditMode, Mode=OneWay, Converter={StaticResource BoolToVis}}"
+                                IsEnabled="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolNegation}}"
+                                Click="DeleteButton_Click">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE74D;" FontSize="14"
+                                          Foreground="{ThemeResource SystemFillColorCriticalBrush}"/>
+                                <TextBlock Text="Delete Voucher"
+                                           Foreground="{ThemeResource SystemFillColorCriticalBrush}"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Clear / cancel -->
+                        <Button HorizontalAlignment="Stretch"
+                                Command="{x:Bind ViewModel.PrepareCreateCommand}"
+                                IsEnabled="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolNegation}}">
+                            <TextBlock Text="Clear Form"/>
+                        </Button>
+
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+    </Grid>
+</Page>
