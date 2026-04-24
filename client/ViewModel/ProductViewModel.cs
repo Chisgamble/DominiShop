@@ -13,23 +13,17 @@ namespace DominiShop.ViewModel;
 public partial class ProductViewModel(ProductService productService, CategoryService categoryService) : BaseViewModel
 {
     private readonly ProductService _productService = productService;
-    private readonly CategoryService _categoryService = categoryService; // Cần service này để lấy danh mục
+    private readonly CategoryService _categoryService = categoryService;
 
     private List<Product> _masterProducts = new();
 
     [ObservableProperty] public partial bool IsLoading { get; set; }
     [ObservableProperty] public partial bool IsEditMode { get; set; }
 
-    // --- DATA ---
     public ObservableCollection<Product> FilteredProducts { get; } = new();
-
-    // Danh sách Category dùng để Đổ vào Form Thêm/Sửa
     [ObservableProperty] public partial ObservableCollection<Category> AvailableCategories { get; set; } = new();
-
-    // Danh sách Category dùng cho Bộ lọc (Có thêm mục "Tất cả")
     [ObservableProperty] public partial ObservableCollection<Category> FilterCategories { get; set; } = new();
 
-    // --- TÌM KIẾM & SẮP XẾP ---
     [ObservableProperty] public partial string SearchText { get; set; } = string.Empty;
     [ObservableProperty] public partial Category? SelectedFilterCategory { get; set; }
     [ObservableProperty] public partial string SelectedSortOption { get; set; } = "Name (A-Z)";
@@ -43,13 +37,15 @@ public partial class ProductViewModel(ProductService productService, CategorySer
     partial void OnSelectedFilterCategoryChanged(Category? value) => FilterData();
     partial void OnSelectedSortOptionChanged(string value) => FilterData();
 
-    // --- QUẢN LÝ CHỌN ITEM ---
     [ObservableProperty] public partial Product? SelectedProduct { get; set; }
     [ObservableProperty] public partial Product EditingProduct { get; set; } = new();
 
+    // Bridging variables for UI Input
     [ObservableProperty] public partial double EditingBasePrice { get; set; }
     [ObservableProperty] public partial double EditingSellPrice { get; set; }
-    [ObservableProperty] public partial double EditingQuantity { get; set; }
+    [ObservableProperty] public partial double EditingInStock { get; set; }
+    [ObservableProperty] public partial double EditingSold { get; set; }
+    [ObservableProperty] public partial double EditingTotalQuantity { get; set; }
 
     [RelayCommand]
     public async Task LoadDataAsync()
@@ -64,17 +60,13 @@ public partial class ProductViewModel(ProductService productService, CategorySer
             {
                 AvailableCategories.Clear();
                 FilterCategories.Clear();
-
                 FilterCategories.Add(new Category { Id = 0, Name = "All Categories" });
-
                 foreach (var c in categoryResult.Data)
                 {
                     AvailableCategories.Add(c);
                     FilterCategories.Add(c);
                 }
-
-                if (SelectedFilterCategory == null)
-                    SelectedFilterCategory = FilterCategories.First();
+                if (SelectedFilterCategory == null) SelectedFilterCategory = FilterCategories.First();
             }
 
             if (productResult.Success && productResult.Data != null)
@@ -90,20 +82,16 @@ public partial class ProductViewModel(ProductService productService, CategorySer
     {
         var query = _masterProducts.AsQueryable();
 
-        // 1. Lọc theo Text
         if (!string.IsNullOrWhiteSpace(SearchText))
         {
-            query = query.Where(p => p.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
-                                     (p.Note != null && p.Note.Contains(SearchText, StringComparison.OrdinalIgnoreCase)));
+            query = query.Where(p => p.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
         }
 
-        // 2. Lọc theo Danh mục (Bỏ qua nếu Id == 0 tức là "All Categories")
         if (SelectedFilterCategory != null && SelectedFilterCategory.Id != 0)
         {
             query = query.Where(p => p.CategoryId == SelectedFilterCategory.Id);
         }
 
-        // 3. Sắp xếp
         query = SelectedSortOption switch
         {
             "Name (A-Z)" => query.OrderBy(p => p.Name),
@@ -116,34 +104,19 @@ public partial class ProductViewModel(ProductService productService, CategorySer
         };
 
         var results = query.ToList();
-
         FilteredProducts.Clear();
         foreach (var item in results) FilteredProducts.Add(item);
-    }
-
-    [RelayCommand]
-    public async Task DeleteAsync(Product? product)
-    {
-        if (product == null) return;
-        IsLoading = true;
-        if ((await _productService.DeleteProductAsync(product.Id)).Success)
-        {
-            SelectedProduct = null;
-            await LoadDataAsync();
-        }
-        IsLoading = false;
     }
 
     [RelayCommand]
     private void AddNew()
     {
         EditingProduct = new Product();
-
-        // Reset các biến cầu nối về 0
         EditingBasePrice = 0;
         EditingSellPrice = 0;
-        EditingQuantity = 0;
-
+        EditingInStock = 0;
+        EditingSold = 0;
+        EditingTotalQuantity = 0;
         IsEditMode = true;
         SelectedProduct = null;
     }
@@ -160,13 +133,15 @@ public partial class ProductViewModel(ProductService productService, CategorySer
             BasePrice = product.BasePrice,
             Price = product.Price,
             Quantity = product.Quantity,
-            CategoryId = product.CategoryId
+            CategoryId = product.CategoryId,
+            Sold = product.Sold
         };
 
-        // Gán dữ liệu vào biến cầu nối để hiển thị lên Form
         EditingBasePrice = (double)product.BasePrice;
         EditingSellPrice = (double)product.Price;
-        EditingQuantity = product.Quantity;
+        EditingInStock = product.Quantity;
+        EditingSold = product.Sold;
+        EditingTotalQuantity = EditingInStock + EditingSold;
 
         IsEditMode = true;
     }
@@ -174,14 +149,11 @@ public partial class ProductViewModel(ProductService productService, CategorySer
     [RelayCommand]
     private async Task SaveAsync()
     {
-        if (string.IsNullOrWhiteSpace(EditingProduct.Name)) return;
-
         IsLoading = true;
-
-        // ĐỔ DỮ LIỆU TỪ BIẾN CẦU NỐI VÀO MODEL TRƯỚC KHI LƯU
         EditingProduct.BasePrice = (decimal)EditingBasePrice;
         EditingProduct.Price = (decimal)EditingSellPrice;
-        EditingProduct.Quantity = (int)EditingQuantity;
+        EditingProduct.Quantity = (int)EditingInStock;
+        EditingProduct.Sold = (int)EditingSold;
 
         bool isSuccess = EditingProduct.Id == 0
             ? (await _productService.CreateProductAsync(EditingProduct)).Success
@@ -190,6 +162,19 @@ public partial class ProductViewModel(ProductService productService, CategorySer
         if (isSuccess)
         {
             IsEditMode = false;
+            await LoadDataAsync();
+        }
+        IsLoading = false;
+    }
+
+    [RelayCommand]
+    public async Task DeleteAsync(Product? product)
+    {
+        if (product == null) return;
+        IsLoading = true;
+        if ((await _productService.DeleteProductAsync(product.Id)).Success)
+        {
+            SelectedProduct = null;
             await LoadDataAsync();
         }
         IsLoading = false;

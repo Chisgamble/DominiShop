@@ -22,6 +22,32 @@ public sealed partial class ProductPage : Page
 
     public string GetDialogTitle(bool isEdit) => isEdit ? "Update Product" : "Add New Product";
 
+    private async void OnAddNewClick(object sender, RoutedEventArgs e)
+    {
+        ErrorBanner.IsOpen = false;
+        ViewModel.AddNewCommand.Execute(null);
+        EditDialog.XamlRoot = this.XamlRoot;
+        await EditDialog.ShowAsync();
+    }
+
+    private async void OnRowSelected(object sender, SelectionChangedEventArgs e)
+    {
+        if (ViewModel.SelectedProduct == null) return;
+        var product = ViewModel.SelectedProduct;
+        DetailDialog.XamlRoot = this.XamlRoot;
+        var result = await DetailDialog.ShowAsync();
+        ViewModel.SelectedProduct = null;
+
+        if (result == ContentDialogResult.Primary)
+        {
+            ErrorBanner.IsOpen = false;
+            ViewModel.EditCommand.Execute(product);
+            EditDialog.XamlRoot = this.XamlRoot;
+            await EditDialog.ShowAsync();
+        }
+        else if (result == ContentDialogResult.Secondary) await ConfirmAndDelete(product);
+    }
+
     private async Task ConfirmAndDelete(Product product)
     {
         ContentDialog confirm = new ContentDialog
@@ -32,97 +58,51 @@ public sealed partial class ProductPage : Page
             CloseButtonText = "Cancel",
             XamlRoot = this.XamlRoot
         };
-
-        if (await confirm.ShowAsync() == ContentDialogResult.Primary)
-        {
-            await ViewModel.DeleteAsync(product);
-        }
-    }
-
-    private async void OnAddNewClick(object sender, RoutedEventArgs e)
-    {
-        ErrorBanner.IsOpen = false; // Ẩn lỗi cũ đi
-        ViewModel.AddNewCommand.Execute(null);
-        EditDialog.XamlRoot = this.XamlRoot;
-        await EditDialog.ShowAsync();
-    }
-
-    private async void OnRowSelected(object sender, SelectionChangedEventArgs e)
-    {
-        if (ViewModel.SelectedProduct == null) return;
-
-        var product = ViewModel.SelectedProduct;
-        DetailDialog.XamlRoot = this.XamlRoot;
-        var result = await DetailDialog.ShowAsync();
-
-        ViewModel.SelectedProduct = null;
-
-        if (result == ContentDialogResult.Primary) 
-        {
-            ErrorBanner.IsOpen = false; 
-            ViewModel.EditCommand.Execute(product);
-            EditDialog.XamlRoot = this.XamlRoot;
-            await EditDialog.ShowAsync();
-        }
-        else if (result == ContentDialogResult.Secondary) 
-        {
-            await ConfirmAndDelete(product);
-        }
+        if (await confirm.ShowAsync() == ContentDialogResult.Primary) await ViewModel.DeleteAsync(product);
     }
 
     private async void OnSaveDialogClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
         ErrorBanner.IsOpen = false;
+        List<string> errors = new();
 
-        List<string> errorMessages = new List<string>();
+        if (string.IsNullOrWhiteSpace(ViewModel.EditingProduct.Name)) errors.Add("• Product Name is required.");
+        if (ViewModel.EditingProduct.CategoryId == null || ViewModel.EditingProduct.CategoryId == 0) errors.Add("• Please select a Category.");
+        if (ViewModel.EditingBasePrice < 0 || ViewModel.EditingSellPrice < 0) errors.Add("• Prices cannot be negative.");
 
-        if (string.IsNullOrWhiteSpace(ViewModel.EditingProduct.Name))
-            errorMessages.Add("• Product Name cannot be empty.");
+        double currentSum = ViewModel.EditingInStock + ViewModel.EditingSold;
+        if (currentSum != ViewModel.EditingTotalQuantity)
+        {
+            errors.Add($"• The sum of In Stock ({ViewModel.EditingInStock}) and Sold ({ViewModel.EditingSold}) must equal the Required Total ({ViewModel.EditingTotalQuantity}). Current sum is {currentSum}.");
+        }
 
-        if (ViewModel.EditingProduct.CategoryId == null || ViewModel.EditingProduct.CategoryId == 0)
-            errorMessages.Add("• Please select a Category.");
-
-        if (ViewModel.EditingBasePrice < 0 || ViewModel.EditingSellPrice < 0)
-            errorMessages.Add("• Prices cannot be negative.");
-
-        if (ViewModel.EditingQuantity < 0)
-            errorMessages.Add("• Quantity cannot be negative.");
-
-        if (errorMessages.Count > 0)
+        if (errors.Count > 0)
         {
             args.Cancel = true;
-            ErrorBanner.Message = string.Join("\n", errorMessages);
+            ErrorBanner.Message = string.Join("\n", errors);
             ErrorBanner.IsOpen = true;
             return;
         }
 
         var deferral = args.GetDeferral();
         bool isSuccess = false;
-
         try
         {
             await ViewModel.SaveCommand.ExecuteAsync(null);
-
-            if (!ViewModel.IsEditMode)
-            {
-                isSuccess = true;
-            }
+            if (!ViewModel.IsEditMode) isSuccess = true;
         }
-        finally
-        {
-            deferral.Complete(); 
-        }
+        finally { deferral.Complete(); }
 
         if (isSuccess)
         {
-            ContentDialog successDialog = new ContentDialog
+            ContentDialog success = new ContentDialog
             {
                 Title = "Success",
-                Content = "New product has been saved successfully.",
+                Content = "Product saved successfully!",
                 CloseButtonText = "OK",
                 XamlRoot = this.XamlRoot
             };
-            await successDialog.ShowAsync();
+            await success.ShowAsync();
         }
     }
 }
