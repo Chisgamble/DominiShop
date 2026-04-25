@@ -47,6 +47,7 @@
                     <FontIcon Glyph="&#xE781;"/>
                 </NavigationViewItem.Icon>
             </NavigationViewItem>
+            <NavigationViewItem Content="Voucher" Icon="Tag" Tag="VoucherPage" />
         </NavigationView.MenuItems>
 
         <Frame x:Name="ContentFrame" />
