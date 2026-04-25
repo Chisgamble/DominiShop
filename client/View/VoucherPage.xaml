@@ -21,7 +21,7 @@
     <Grid Padding="28,24,28,24" ColumnSpacing="20">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="360"/>
+            <ColumnDefinition Width="{x:Bind ViewModel.FormPanelColumnWidth, Mode=OneWay}"/>
         </Grid.ColumnDefinitions>
 
         <!-- LEFT COLUMN — header + list -->
@@ -249,7 +249,8 @@
                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                 BorderThickness="1"
                 CornerRadius="12"
-                Padding="24,24">
+                Padding="24,24"
+                Visibility="{x:Bind ViewModel.IsFormVisible, Mode=OneWay, Converter={StaticResource BoolToVis}}">
 
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel Spacing="20">
@@ -311,13 +312,6 @@
                                            IsEnabled="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolNegation}}"/>
                     </StackPanel>
 
-                    <!-- Is Active toggle (edit mode only) -->
-                    <ToggleSwitch Header="Active"
-                                  IsOn="{x:Bind ViewModel.FormIsActive, Mode=TwoWay}"
-                                  OnContent="Yes" OffContent="No"
-                                  Visibility="{x:Bind ViewModel.IsEditMode, Mode=OneWay, Converter={StaticResource BoolToVis}}"
-                                  IsEnabled="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolNegation}}"/>
-
                     <Rectangle Height="1"
                                Fill="{ThemeResource DividerStrokeColorDefaultBrush}"
                                HorizontalAlignment="Stretch"/>
@@ -354,11 +348,14 @@
                             </StackPanel>
                         </Button>
 
-                        <!-- Clear / cancel -->
+                        <!-- Cancel / close form -->
                         <Button HorizontalAlignment="Stretch"
-                                Command="{x:Bind ViewModel.PrepareCreateCommand}"
+                                Command="{x:Bind ViewModel.CloseFormCommand}"
                                 IsEnabled="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolNegation}}">
-                            <TextBlock Text="Clear Form"/>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE711;" FontSize="14"/>
+                                <TextBlock Text="Cancel"/>
+                            </StackPanel>
                         </Button>
 
                     </StackPanel>

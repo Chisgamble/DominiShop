@@ -62,6 +62,10 @@ namespace DominiShop.ViewModel
         [ObservableProperty]
         public partial bool IsEditMode { get; set; }
 
+        // controls whether the form panel is visible
+        [ObservableProperty]
+        public partial bool IsFormVisible { get; set; } = false;
+
         // callbacks for property changes
         partial void OnErrorMessageChanged(string? value) => OnPropertyChanged(nameof(HasError));
         partial void OnSuccessMessageChanged(string? value) => OnPropertyChanged(nameof(HasSuccess));
@@ -108,6 +112,7 @@ namespace DominiShop.ViewModel
         {
             SelectedVoucher = voucher;
             IsEditMode = true;
+            IsFormVisible = true;
             PopulateForm(voucher);
             ClearMessages();
         }
@@ -115,6 +120,17 @@ namespace DominiShop.ViewModel
         [RelayCommand]
         public void PrepareCreate()
         {
+            SelectedVoucher = null;
+            IsEditMode = false;
+            IsFormVisible = true;
+            ClearForm();
+            ClearMessages();
+        }
+
+        [RelayCommand]
+        public void CloseForm()
+        {
+            IsFormVisible = false;
             SelectedVoucher = null;
             IsEditMode = false;
             ClearForm();
@@ -187,6 +203,7 @@ namespace DominiShop.ViewModel
                 if (SelectedVoucher?.Id == voucher.Id)
                 {
                     SelectedVoucher = null;
+                    IsFormVisible = false;
                     ClearForm();
                 }
                 SuccessMessage = "Voucher deleted.";
@@ -282,6 +299,10 @@ namespace DominiShop.ViewModel
         public bool IsEmpty => !IsLoading && Vouchers.Count == 0;
         public string FormPanelTitle => IsEditMode ? "Edit Voucher" : "New Voucher";
         public string SaveButtonLabel => IsEditMode ? "Save Changes" : "Create Voucher";
+        public string FormPanelColumnWidth => IsFormVisible ? "360" : "0";
+
+        partial void OnIsFormVisibleChanged(bool value)
+            => OnPropertyChanged(nameof(FormPanelColumnWidth));
 
         partial void OnIsLoadingChanged(bool value)
         {
