@@ -16,6 +16,8 @@ public class AuthService (Supabase.Client supabase, IRepo<Owner, int> _ownerRepo
     public Supabase.Gotrue.Session? CurrentSession => supabase.Auth.CurrentSession;
     public Supabase.Gotrue.User? CurrentUser => supabase.Auth.CurrentUser;
 
+    public int? CurrentOwnerId { get; private set; }
+
     public async Task<(bool Success, string? Error)> LoginAsync(string email, string password)
     {
         try
@@ -23,14 +25,15 @@ public class AuthService (Supabase.Client supabase, IRepo<Owner, int> _ownerRepo
             var response = await supabase.Auth.SignIn(email, password);
             if (response != null)
             {
+                var ownerRepo = (OwnerRepository)_ownerRepo;
+                var owner = await ownerRepo.GetByEmailAsync(email); 
+                CurrentOwnerId = owner?.Id;
+
                 return (true, null);
             }
             return (false, "Invalid login attempt.");
         }
-        catch (Supabase.Gotrue.Exceptions.GotrueException ex)
-        {
-            return (false, ex.Message);
-        }
+        catch (Exception ex) { return (false, ex.Message); }
     }
 
     public async Task<(bool Success, string? Error)> SignUpAsync(string username, string email, string password)

@@ -9,8 +9,6 @@ public partial class Product
 
     public string Name { get; set; } = null!;
 
-    public string? Pictures { get; set; }
-
     public int Quantity { get; set; }
 
     public decimal Price { get; set; }
