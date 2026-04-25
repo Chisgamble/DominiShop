@@ -276,12 +276,13 @@
                         <ComboBoxItem Content="Free Shipping"/>
                     </ComboBox>
 
-                    <!-- Percent / amount -->
-                    <NumberBox Header="Discount Value (0–100 for percent)"
-                               Minimum="0" Maximum="100"
+                    <!-- Percent / amount — hidden for free_shipping -->
+                    <NumberBox Header="{x:Bind ViewModel.DiscountValueHeader, Mode=OneWay}"
+                               Minimum="0"
                                Value="{x:Bind ViewModel.EditingPercent, Mode=TwoWay}"
                                SpinButtonPlacementMode="Hidden"
-                               PlaceholderText="Enter discount amount"/>
+                               PlaceholderText="Enter discount value"
+                               Visibility="{x:Bind ViewModel.IsDiscountValueVisible, Mode=OneWay, Converter={StaticResource BoolToVis}}"/>
 
                     <!-- Max per person -->
                     <NumberBox Header="Max Uses per Person (0 = unlimited)"

@@ -83,8 +83,18 @@ public sealed partial class VoucherPage : Page
         if (ViewModel.EditingMaxPerPerson < 0)
             errors.Add("Max per person cannot be negative.");
 
-        if (ViewModel.EditingPercent <= 0 || ViewModel.EditingPercent > 100)
-            errors.Add("Discount percent must be from 1 to 100.");
+        // Type-specific discount value validation
+        if (ViewModel.EditingTypeIndex == 0) // percent
+        {
+            if (ViewModel.EditingPercent <= 0 || ViewModel.EditingPercent > 100)
+                errors.Add("Percent discount must be between 1 and 100.");
+        }
+        else if (ViewModel.EditingTypeIndex == 1) // fixed amount
+        {
+            if (ViewModel.EditingPercent <= 0)
+                errors.Add("Fixed discount amount must be greater than 0 VNĐ.");
+        }
+        // free_shipping (index 2): no discount value required
 
         if (ViewModel.EditingExpiryDate.HasValue &&
             ViewModel.EditingExpiryDate.Value.UtcDateTime < DateTime.UtcNow)

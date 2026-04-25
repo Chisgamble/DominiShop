@@ -48,6 +48,22 @@ namespace DominiShop.ViewModel
         [ObservableProperty] public partial int EditingTypeIndex { get; set; } = -1;
         [ObservableProperty] public partial bool EditingIsActive { get; set; } = true;
 
+        // Dynamic label and visibility for the discount value field
+        // TypeOptions: 0 = percent, 1 = fixed, 2 = free_shipping
+        public string DiscountValueHeader => EditingTypeIndex switch
+        {
+            0 => "Percent discount (1 – 100)",
+            1 => "Fixed discount amount (VNĐ)",
+            _ => "Discount value"
+        };
+        public bool IsDiscountValueVisible => EditingTypeIndex == 0 || EditingTypeIndex == 1;
+
+        partial void OnEditingTypeIndexChanged(int value)
+        {
+            OnPropertyChanged(nameof(DiscountValueHeader));
+            OnPropertyChanged(nameof(IsDiscountValueVisible));
+        }
+
         public bool HasSelectedVoucher => SelectedVoucher != null;
         partial void OnSelectedVoucherChanged(Voucher? value)
         {
