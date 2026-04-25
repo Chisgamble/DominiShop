@@ -92,6 +92,7 @@ namespace DominiShop
             
             // voucher
             services.AddTransient<IRepo<Voucher, int>, VoucherRepository>();
+            services.AddTransient<VoucherRepository>();
             services.AddTransient<VoucherService>();
             services.AddTransient<VoucherViewModel>();
 
