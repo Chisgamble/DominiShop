@@ -39,9 +39,14 @@
         </NavigationView.PaneHeader>
 
         <NavigationView.MenuItems>
-            <NavigationViewItem Content="Thống kê" Icon="FourBars" Tag="StatisticsPage" />
-            <NavigationViewItem Content="Kho hàng" Icon="AllApps" Tag="InventoryPage" />
-            <NavigationViewItem Content="Voucher" Icon="Tag" Tag="VoucherPage" />
+            <NavigationViewItem Content="Statistic" Icon="FourBars" Tag="StatisticsPage" />
+            <NavigationViewItem Content="Inventory" Icon="AllApps" Tag="InventoryPage" />
+            <NavigationViewItem Content="Category Management" Tag="CategoryPage" Icon="List" />
+            <NavigationViewItem Content="Product Management" Tag="ProductPage">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE781;"/>
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
         </NavigationView.MenuItems>
 
         <Frame x:Name="ContentFrame" />

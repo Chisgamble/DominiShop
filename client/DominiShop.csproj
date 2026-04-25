@@ -16,7 +16,9 @@
   <ItemGroup>
     <None Remove="appsettings.json" />
     <None Remove="Assets\logo.jpg" />
+    <None Remove="View\CategoryPage.xaml" />
     <None Remove="View\InventoryPage.xaml" />
+    <None Remove="View\ProductPage.xaml" />
     <None Remove="View\StatisticsPage.xaml" />
   </ItemGroup>
   <ItemGroup>
@@ -49,6 +51,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="CommunityToolkit.WinUI.UI.Controls.DataGrid" Version="7.1.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.6">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -65,6 +68,16 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Core\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="View\ProductPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="View\CategoryPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Page Update="View\InventoryPage.xaml">
