@@ -4,6 +4,7 @@ using DominiShop.Repository;
 using DominiShop.Service;
 using DominiShop.View;
 using DominiShop.ViewModel;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
@@ -60,26 +61,52 @@ namespace DominiShop
         {
             var services = new ServiceCollection();
 
-            services.AddDbContext<PostgresContext>(ServiceLifetime.Transient);
-
             var configuration = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
             .Build();
-
+                
             var url = configuration["Supabase:Url"];
             var key = configuration["Supabase:Key"];
             var options = new SupabaseOptions { AutoConnectRealtime = true };
 
+            services.AddDbContext<PostgresContext>(options =>
+                options.UseNpgsql(
+                    configuration.GetConnectionString("DefaultConnection"),
+                    npgsqlOptions => npgsqlOptions.EnableRetryOnFailure(
+                        maxRetryCount: 3,
+                        maxRetryDelay: TimeSpan.FromSeconds(5),
+                        errorCodesToAdd: null)
+                ),
+                ServiceLifetime.Transient);
+
             services.AddSingleton(provider => new Supabase.Client(url!, key, options));
 
+            // navigation
             services.AddSingleton<INavigationService, NavigationService>();
 
+            // auth and owner
             services.AddTransient<IRepo<Owner, int>, OwnerRepository>();
             services.AddSingleton<AuthService>();
             services.AddTransient<AuthViewModel>();
+            
+            // voucher
+            services.AddTransient<IRepo<Voucher, int>, VoucherRepository>();
+            services.AddTransient<VoucherRepository>();
+            services.AddTransient<VoucherService>();
+            services.AddTransient<VoucherViewModel>();
 
+            // main
             services.AddSingleton<MainViewModel>();
+
+            services.AddTransient<IRepo<Category, int>, CategoryRepository>();
+            services.AddTransient<CategoryRepository>(); 
+            services.AddSingleton<CategoryService>();
+            services.AddTransient<CategoryViewModel>();
+
+            services.AddTransient<ProductRepository>();
+            services.AddTransient<ProductService>();
+            services.AddTransient<ProductViewModel>();
 
             return services.BuildServiceProvider();
         }
