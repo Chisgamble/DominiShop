@@ -13,6 +13,12 @@
     <EnableMsixTooling>true</EnableMsixTooling>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' != 'true'">
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <WindowsPackageType>None</WindowsPackageType>
+  </PropertyGroup>
+
   <ItemGroup>
     <None Remove="appsettings.json" />
     <None Remove="Assets\logo.jpg" />
