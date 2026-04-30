@@ -120,4 +120,19 @@ public class OwnerRepository : IRepo<Owner, int>
             throw new Exception($"Lỗi khi xóa Owner (ID: {id}): {ex.Message}");
         }
     }
+
+
+    public async Task<Owner?> GetByEmailAsync(string email)
+    {
+        try
+        {
+            // Tìm owner có email trùng khớp và chưa bị xóa
+            return await _context.Owners
+                    .FirstOrDefaultAsync(o => o.Email == email && o.DeletedAt == null);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Lỗi khi tìm Owner theo Email: {ex.Message}");
+        }
+    }
 }

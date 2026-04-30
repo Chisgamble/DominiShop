@@ -251,6 +251,8 @@ public partial class PostgresContext : DbContext
 
             entity.HasIndex(e => e.Email, "owner_email_key").IsUnique();
 
+            entity.HasIndex(e => e.Email, "owner_email_key1").IsUnique();
+
             entity.HasIndex(e => e.Username, "owner_username_key").IsUnique();
 
             entity.Property(e => e.Id).HasColumnName("id");
@@ -285,7 +287,6 @@ public partial class PostgresContext : DbContext
             entity.Property(e => e.Name).HasColumnName("name");
             entity.Property(e => e.Note).HasColumnName("note");
             entity.Property(e => e.OwnerId).HasColumnName("owner_id");
-            entity.Property(e => e.Pictures).HasColumnName("pictures");
             entity.Property(e => e.Price).HasColumnName("price");
             entity.Property(e => e.Quantity).HasColumnName("quantity");
             entity.Property(e => e.Sold).HasColumnName("sold");
