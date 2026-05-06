@@ -17,6 +17,7 @@
     <None Remove="appsettings.json" />
     <None Remove="Assets\logo.jpg" />
     <None Remove="View\InventoryPage.xaml" />
+    <None Remove="View\OrderPage.xaml" />
     <None Remove="View\StatisticsPage.xaml" />
   </ItemGroup>
   <ItemGroup>
@@ -65,6 +66,11 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Core\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="View\OrderPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Page Update="View\InventoryPage.xaml">

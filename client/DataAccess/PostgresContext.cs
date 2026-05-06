@@ -52,7 +52,6 @@ public partial class PostgresContext : DbContext
             .HasPostgresExtension("extensions", "pg_stat_statements")
             .HasPostgresExtension("extensions", "pgcrypto")
             .HasPostgresExtension("extensions", "uuid-ossp")
-            .HasPostgresExtension("graphql", "pg_graphql")
             .HasPostgresExtension("vault", "supabase_vault");
 
         modelBuilder.Entity<Category>(entity =>
@@ -251,6 +250,8 @@ public partial class PostgresContext : DbContext
 
             entity.HasIndex(e => e.Email, "owner_email_key").IsUnique();
 
+            entity.HasIndex(e => e.Email, "owner_email_key1").IsUnique();
+
             entity.HasIndex(e => e.Username, "owner_username_key").IsUnique();
 
             entity.Property(e => e.Id).HasColumnName("id");
@@ -285,7 +286,6 @@ public partial class PostgresContext : DbContext
             entity.Property(e => e.Name).HasColumnName("name");
             entity.Property(e => e.Note).HasColumnName("note");
             entity.Property(e => e.OwnerId).HasColumnName("owner_id");
-            entity.Property(e => e.Pictures).HasColumnName("pictures");
             entity.Property(e => e.Price).HasColumnName("price");
             entity.Property(e => e.Quantity).HasColumnName("quantity");
             entity.Property(e => e.Sold).HasColumnName("sold");
@@ -293,8 +293,7 @@ public partial class PostgresContext : DbContext
 
             entity.HasOne(d => d.Category).WithMany(p => p.Products)
                 .HasForeignKey(d => d.CategoryId)
-                .OnDelete(DeleteBehavior.SetNull)
-                .HasConstraintName("food_category_id_fkey");
+                .HasConstraintName("product_category_id_fkey");
 
             entity.HasOne(d => d.Owner).WithMany(p => p.Products)
                 .HasForeignKey(d => d.OwnerId)

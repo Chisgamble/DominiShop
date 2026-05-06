@@ -77,7 +77,9 @@ namespace DominiShop
 
             services.AddTransient<IRepo<Owner, int>, OwnerRepository>();
             services.AddSingleton<AuthService>();
+            services.AddSingleton<OrderRepository>();
             services.AddTransient<AuthViewModel>();
+            services.AddTransient<OrderViewModel>();
 
             services.AddSingleton<MainViewModel>();
 

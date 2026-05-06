@@ -41,6 +41,7 @@
         <NavigationView.MenuItems>
             <NavigationViewItem Content="Thống kê" Icon="FourBars" Tag="StatisticsPage" />
             <NavigationViewItem Content="Kho hàng" Icon="AllApps" Tag="InventoryPage" />
+            <NavigationViewItem Content="Đơn hàng" Icon="Shop" Tag="OrderPage" />
         </NavigationView.MenuItems>
 
         <Frame x:Name="ContentFrame" />

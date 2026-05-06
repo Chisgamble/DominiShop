@@ -1,0 +1,351 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="DominiShop.View.OrderPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converter="using:DominiShop.Converter"
+    xmlns:model="using:DominiShop.Model"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Page.Resources>
+        <converter:MoneyConverter x:Key="MoneyConverter"/>
+        <converter:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <converter:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter"/>
+        <converter:OrderStatusToBrushConverter x:Key="StatusToBrushConverter"/>
+        <converter:OrderStatusToLabelConverter x:Key="StatusToLabelConverter"/>
+        <converter:StringToBoolConverter x:Key="StringToBoolConverter"/>
+    </Page.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Grid Grid.Row="0" Padding="24,20,24,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Text="Quản lý đơn hàng"
+                       Style="{StaticResource TitleTextBlockStyle}"
+                       VerticalAlignment="Center"/>
+
+            <Button Grid.Column="1"
+                    Command="{x:Bind ViewModel.LoadOrdersCommand}"
+                    Style="{StaticResource AccentButtonStyle}"
+                    VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon Glyph="&#xE72C;" FontSize="14"/>
+                    <TextBlock Text="Làm mới"/>
+                </StackPanel>
+            </Button>
+        </Grid>
+
+        <!-- Error banner -->
+        <InfoBar Grid.Row="0"
+             IsOpen="{x:Bind ViewModel.ErrorMessage, Mode=OneWay, Converter={StaticResource StringToBoolConverter}}"
+             Severity="Error"
+             Title="Lỗi"
+             Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
+             Margin="24,0,24,8"/>
+
+        <!-- Master-Detail layout -->
+        <Grid Grid.Row="1" Padding="24,0,24,24">
+            <Grid.ColumnDefinitions>
+                <!-- Danh sách order (master) -->
+                <ColumnDefinition Width="2*" MinWidth="320"/>
+                <ColumnDefinition Width="12"/>
+                <!-- Chi tiết order (detail) -->
+                <ColumnDefinition Width="3*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- === MASTER: Danh sách order === -->
+            <Grid Grid.Column="0">
+                <!-- Loading overlay -->
+                <ProgressRing IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}"
+                              HorizontalAlignment="Center" VerticalAlignment="Center"
+                              Width="48" Height="48"
+                              Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"/>
+
+                <ListView x:Name="OrderListView"
+                          ItemsSource="{x:Bind ViewModel.Orders, Mode=OneWay}"
+                          SelectedItem="{x:Bind ViewModel.SelectedOrder, Mode=TwoWay}"
+                          SelectionMode="Single"
+                          Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+
+                    <!-- Header cột -->
+                    <ListView.Header>
+                        <Grid Padding="12,8" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                              CornerRadius="8,8,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="60"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition Width="80"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Mã ĐH" Style="{StaticResource CaptionTextBlockStyle}" FontWeight="SemiBold"/>
+                            <TextBlock Grid.Column="1" Text="Khách hàng" Style="{StaticResource CaptionTextBlockStyle}" FontWeight="SemiBold"/>
+                            <TextBlock Grid.Column="2" Text="Tổng tiền" Style="{StaticResource CaptionTextBlockStyle}" FontWeight="SemiBold"/>
+                            <TextBlock Grid.Column="3" Text="Trạng thái" Style="{StaticResource CaptionTextBlockStyle}" FontWeight="SemiBold"/>
+                        </Grid>
+                    </ListView.Header>
+
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="model:Order">
+                            <Grid Padding="12,10" ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="110"/>
+                                    <ColumnDefinition Width="80"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Mã order -->
+                                <TextBlock Grid.Column="0"
+                                           Text="{x:Bind Id}"
+                                           Style="{StaticResource BodyTextBlockStyle}"
+                                           FontWeight="SemiBold"
+                                           VerticalAlignment="Center"/>
+
+                                <!-- Tên khách hàng (CustomerId hiển thị tạm, có thể join Customer sau) -->
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="{x:Bind CustomerId, TargetNullValue='Khách lẻ'}"
+                                               Style="{StaticResource BodyTextBlockStyle}"
+                                               TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Text="{x:Bind OrderAt}"
+                                               Style="{StaticResource CaptionTextBlockStyle}"
+                                               Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                                </StackPanel>
+
+                                <!-- Tổng tiền -->
+                                <TextBlock Grid.Column="2"
+                                           Text="{x:Bind TotalPrice, Converter={StaticResource MoneyConverter}}"
+                                           Style="{StaticResource BodyTextBlockStyle}"
+                                           VerticalAlignment="Center"/>
+
+                                <!-- Badge trạng thái - nhấn mạnh bằng màu nền -->
+                                <Border Grid.Column="3"
+                                        Background="{x:Bind Status, Converter={StaticResource StatusToBrushConverter}}"
+                                        CornerRadius="12"
+                                        Padding="8,3"
+                                        VerticalAlignment="Center"
+                                        HorizontalAlignment="Left">
+                                    <TextBlock Text="{x:Bind Status, Converter={StaticResource StatusToLabelConverter}}"
+                                               Foreground="White"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"/>
+                                </Border>
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                            <Setter Property="Padding" Value="0"/>
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                </ListView>
+            </Grid>
+
+            <!-- Splitter visual -->
+            <Rectangle Grid.Column="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}" Width="1" HorizontalAlignment="Center"/>
+
+            <!-- === DETAIL: Chi tiết order === -->
+            <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
+                <Grid>
+                    <!-- Placeholder khi chưa chọn -->
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+            Spacing="12"
+            Visibility="{x:Bind ViewModel.HasSelectedOrder, Mode=OneWay, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                        <FontIcon Glyph="&#xE9F9;" FontSize="48"
+              Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                        <TextBlock Text="Chọn một đơn hàng để xem chi tiết"
+               Style="{StaticResource BodyTextBlockStyle}"
+               Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                    </StackPanel>
+
+                    <!-- Panel chi tiết -->
+                    <StackPanel Spacing="16"
+            Padding="0,4"
+            Visibility="{x:Bind ViewModel.HasSelectedOrder, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+
+                        <!-- Tiêu đề + Badge status nổi bật -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource SubtitleTextBlockStyle}">
+                <Run Text="Đơn hàng #"/>
+                <Run Text="{x:Bind ViewModel.SelectedOrder.Id, Mode=OneWay}"/>
+                                </TextBlock>
+                                <TextBlock Text="{x:Bind ViewModel.SelectedOrder.OrderAt, Mode=OneWay}"
+                       Style="{StaticResource CaptionTextBlockStyle}"
+                       Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                            </StackPanel>
+
+                            <!-- Badge status to, nhấn mạnh -->
+                            <Border Grid.Column="1"
+                Background="{x:Bind ViewModel.SelectedOrder.Status, Mode=OneWay, Converter={StaticResource StatusToBrushConverter}}"
+                CornerRadius="16"
+                Padding="16,6"
+                VerticalAlignment="Center">
+                                <TextBlock Text="{x:Bind ViewModel.SelectedOrder.Status, Mode=OneWay, Converter={StaticResource StatusToLabelConverter}}"
+                       Foreground="White"
+                       FontSize="14"
+                       FontWeight="Bold"/>
+                            </Border>
+                        </Grid>
+
+                        <!-- Thông tin chung -->
+                        <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+            CornerRadius="8" Padding="16">
+                            <Grid ColumnSpacing="16" RowSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Hàng 1 -->
+                                <StackPanel Grid.Row="0" Grid.Column="0">
+                                    <TextBlock Text="Khách hàng" Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                                    <TextBlock Text="{x:Bind ViewModel.SelectedOrder.CustomerId, Mode=OneWay, TargetNullValue='Khách lẻ'}"
+                           Style="{StaticResource BodyStrongTextBlockStyle}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Row="0" Grid.Column="1">
+                                    <TextBlock Text="Thanh toán" Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                                    <TextBlock Text="{x:Bind ViewModel.SelectedOrder.PaymentMethod, Mode=OneWay, TargetNullValue='—'}"
+                           Style="{StaticResource BodyStrongTextBlockStyle}"/>
+                                </StackPanel>
+
+                                <!-- Hàng 2 -->
+                                <StackPanel Grid.Row="1" Grid.Column="0">
+                                    <TextBlock Text="Địa chỉ" Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                                    <TextBlock Text="{x:Bind ViewModel.SelectedOrder.Address, Mode=OneWay, TargetNullValue='—'}"
+                           Style="{StaticResource BodyTextBlockStyle}"
+                           TextWrapping="WrapWholeWords"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Row="1" Grid.Column="1">
+                                    <TextBlock Text="Phí vận chuyển" Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                                    <TextBlock Text="{x:Bind ViewModel.SelectedOrder.ShippingFee, Mode=OneWay, Converter={StaticResource MoneyConverter}}"
+                           Style="{StaticResource BodyStrongTextBlockStyle}"/>
+                                </StackPanel>
+
+                                <!-- Hàng 3: Tổng tiền nổi bật -->
+                                <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2">
+                                    <TextBlock Text="Tổng cộng" Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                                    <TextBlock Text="{x:Bind ViewModel.SelectedOrder.TotalPrice, Mode=OneWay, Converter={StaticResource MoneyConverter}}"
+                           Style="{StaticResource TitleTextBlockStyle}"
+                           Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- Cập nhật trạng thái -->
+                        <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+            CornerRadius="8" Padding="16">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="Cập nhật trạng thái" Style="{StaticResource BodyStrongTextBlockStyle}"/>
+                                <!-- Cập nhật trạng thái -->
+                                <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="8" Padding="16">
+                                    <StackPanel Spacing="10">
+                                        <TextBlock Text="Cập nhật trạng thái" Style="{StaticResource BodyStrongTextBlockStyle}"/>
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <Button Content="Chờ xử lý"
+                                Command="{x:Bind ViewModel.UpdateStatusCommand}" CommandParameter="pending"/>
+                                            <Button Content="Đã xác nhận"
+                                Command="{x:Bind ViewModel.UpdateStatusCommand}" CommandParameter="confirmed"/>
+                                            <Button Content="Đang giao"
+                                Command="{x:Bind ViewModel.UpdateStatusCommand}" CommandParameter="delivering"/>
+                                            <Button Content="Hoàn thành"
+                                Command="{x:Bind ViewModel.UpdateStatusCommand}" CommandParameter="completed"/>
+                                            <Button Content="Huỷ đơn"
+                                Command="{x:Bind ViewModel.UpdateStatusCommand}" CommandParameter="cancelled"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Danh sách sản phẩm trong đơn (OrderDetails) -->
+                        <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+            CornerRadius="8" Padding="16">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="Sản phẩm trong đơn" Style="{StaticResource BodyStrongTextBlockStyle}"/>
+                                <!-- Header -->
+                                <Grid Padding="0,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                        <ColumnDefinition Width="100"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Tên sản phẩm" Style="{StaticResource CaptionTextBlockStyle}" FontWeight="SemiBold"/>
+                                    <TextBlock Grid.Column="1" Text="SL" Style="{StaticResource CaptionTextBlockStyle}" FontWeight="SemiBold"/>
+                                    <TextBlock Grid.Column="2" Text="Đơn giá" Style="{StaticResource CaptionTextBlockStyle}" FontWeight="SemiBold"/>
+                                </Grid>
+
+                                <Rectangle Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}"/>
+
+                                <!-- Danh sách OrderDetail -->
+                                <ItemsControl ItemsSource="{x:Bind ViewModel.SelectedOrder.OrderDetails, Mode=OneWay}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="model:OrderDetail">
+                                            <Grid Padding="0,8" ColumnSpacing="8">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="60"/>
+                                                    <ColumnDefinition Width="100"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <!-- Tên sản phẩm (từ navigation property Product) -->
+                                                <TextBlock Grid.Column="0"
+                                       Text="{x:Bind Product.Name, TargetNullValue='Sản phẩm đã xoá'}"
+                                       Style="{StaticResource BodyTextBlockStyle}"
+                                       TextTrimming="CharacterEllipsis"
+                                       VerticalAlignment="Center"/>
+
+                                                <!-- Số lượng -->
+                                                <TextBlock Grid.Column="1"
+                                       Text="{x:Bind Quantity}"
+                                       Style="{StaticResource BodyTextBlockStyle}"
+                                       VerticalAlignment="Center"/>
+
+                                                <!-- Giá tại thời điểm mua -->
+                                                <TextBlock Grid.Column="2"
+                                       Text="{x:Bind Price, Converter={StaticResource MoneyConverter}}"
+                                       Style="{StaticResource BodyTextBlockStyle}"
+                                       VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+                
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</Page>
