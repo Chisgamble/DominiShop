@@ -48,6 +48,7 @@
                 </NavigationViewItem.Icon>
             </NavigationViewItem>
             <NavigationViewItem Content="Voucher" Icon="Tag" Tag="VoucherPage" />
+            <NavigationViewItem Content="Tax" Icon="Send" Tag="TaxPage"/>
         </NavigationView.MenuItems>
 
         <Frame x:Name="ContentFrame" />

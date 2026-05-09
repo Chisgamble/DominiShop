@@ -17,7 +17,7 @@ public partial class Product
 
     public string? Note { get; set; }
 
-    public int? CategoryId { get; set; }
+    public int CategoryId { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
@@ -29,7 +29,7 @@ public partial class Product
 
     public decimal BasePrice { get; set; }
 
-    public virtual Category? Category { get; set; }
+    public virtual Category Category { get; set; } = null!;
 
     public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
 

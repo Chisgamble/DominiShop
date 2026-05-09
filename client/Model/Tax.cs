@@ -16,9 +16,11 @@ public partial class Tax
 
     public string? Name { get; set; }
 
-    public double? Percent { get; set; }
+    public decimal? Value { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
+
+    public string? Type { get; set; }
 
     public virtual Owner? Owner { get; set; }
 }
