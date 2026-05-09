@@ -20,8 +20,4 @@ public partial class Category
     public virtual Owner? Owner { get; set; }
 
     public virtual ICollection<Product> Products { get; set; } = new List<Product>();
-
-    public string FormattedCreatedAt => CreatedAt.ToString("dd/MM/yyyy");
-
-    public int ProductCount => Products?.Count ?? 0;
 }
