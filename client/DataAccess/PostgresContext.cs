@@ -24,6 +24,8 @@ public partial class PostgresContext : DbContext
 
     public virtual DbSet<OrderDetail> OrderDetails { get; set; }
 
+    public virtual DbSet<OrderTax> OrderTaxes { get; set; }
+
     public virtual DbSet<OrderVoucher> OrderVouchers { get; set; }
 
     public virtual DbSet<Owner> Owners { get; set; }
@@ -164,7 +166,6 @@ public partial class PostgresContext : DbContext
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnName("created_at");
-            entity.Property(e => e.CustomerId).HasColumnName("customer_id");
             entity.Property(e => e.OrderAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnName("order_at");
@@ -172,23 +173,18 @@ public partial class PostgresContext : DbContext
             entity.Property(e => e.PaymentMethod)
                 .HasMaxLength(50)
                 .HasColumnName("payment_method");
+            entity.Property(e => e.Phone).HasColumnName("phone");
             entity.Property(e => e.ShippingFee).HasColumnName("shipping_fee");
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
                 .HasColumnName("status");
             entity.Property(e => e.TotalPrice).HasColumnName("total_price");
             entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
-            entity.Property(e => e.VoucherId).HasColumnName("voucher_id");
 
             entity.HasOne(d => d.Owner).WithMany(p => p.Orders)
                 .HasForeignKey(d => d.OwnerId)
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("order_owner_id_fkey");
-
-            entity.HasOne(d => d.Voucher).WithMany(p => p.Orders)
-                .HasForeignKey(d => d.VoucherId)
-                .OnDelete(DeleteBehavior.SetNull)
-                .HasConstraintName("order_voucher_id_fkey");
         });
 
         modelBuilder.Entity<OrderDetail>(entity =>
@@ -216,6 +212,28 @@ public partial class PostgresContext : DbContext
                 .HasForeignKey(d => d.ProductId)
                 .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("order_detail_food_id_fkey");
+        });
+
+        modelBuilder.Entity<OrderTax>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("order_tax_pkey");
+
+            entity.ToTable("order_tax");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnName("created_at");
+            entity.Property(e => e.OrderId).HasColumnName("order_id");
+            entity.Property(e => e.TaxId).HasColumnName("tax_id");
+
+            entity.HasOne(d => d.Order).WithMany(p => p.OrderTaxes)
+                .HasForeignKey(d => d.OrderId)
+                .HasConstraintName("order_tax_order_id_fkey");
+
+            entity.HasOne(d => d.Tax).WithMany(p => p.OrderTaxes)
+                .HasForeignKey(d => d.TaxId)
+                .HasConstraintName("order_tax_tax_id_fkey");
         });
 
         modelBuilder.Entity<OrderVoucher>(entity =>
@@ -308,6 +326,9 @@ public partial class PostgresContext : DbContext
             entity.ToTable("tax", tb => tb.HasComment("Tax"));
 
             entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.AutoApply)
+                .HasDefaultValue(false)
+                .HasColumnName("autoApply");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("now()")
                 .HasColumnName("created_at");

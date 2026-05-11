@@ -49,6 +49,11 @@
             </NavigationViewItem>
             <NavigationViewItem Content="Voucher" Icon="Tag" Tag="VoucherPage" />
             <NavigationViewItem Content="Tax" Icon="Send" Tag="TaxPage"/>
+            <NavigationViewItem Content="Order Management" Tag="OrderPage">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE7BF;"/>
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
         </NavigationView.MenuItems>
 
         <Frame x:Name="ContentFrame" />

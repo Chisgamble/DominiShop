@@ -29,7 +29,5 @@ public partial class Voucher
 
     public virtual ICollection<OrderVoucher> OrderVouchers { get; set; } = new List<OrderVoucher>();
 
-    public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
-
     public virtual Owner? Owner { get; set; }
 }
