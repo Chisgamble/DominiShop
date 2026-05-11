@@ -61,7 +61,7 @@ public partial class AuthViewModel(AuthService authService) : BaseViewModel
             var (ok, err) = await _auth.LoginAsync(LoginEmail, LoginPassword);
             if (!ok)
             {
-                SetError(err);
+                SetError("Error : Cannot login. Please try again later.");
                 return;
             }
             App.NavigateToMain();
@@ -88,7 +88,7 @@ public partial class AuthViewModel(AuthService authService) : BaseViewModel
         await RunAsync(async () =>
         {
             var (ok, err) = await _auth.SignUpAsync(SignUpUsername, SignUpEmail, SignUpPassword);
-            if (!ok) { SetError(err); return; }
+            if (!ok) { SetError("Error : Cannot login. Please try again later."); return; }
 
             IsLoginMode = true;
             LoginEmail = SignUpEmail;

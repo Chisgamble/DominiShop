@@ -96,6 +96,11 @@ namespace DominiShop
             services.AddTransient<VoucherService>();
             services.AddTransient<VoucherViewModel>();
 
+            //tax
+            services.AddTransient<TaxViewModel>();
+            services.AddTransient<TaxService>();
+            services.AddTransient<TaxRepository>();
+
             // main
             services.AddSingleton<MainViewModel>();
 

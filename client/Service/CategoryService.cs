@@ -11,7 +11,7 @@ public class CategoryService(CategoryRepository categoryRepo, AuthService authSe
     private readonly CategoryRepository _repo = categoryRepo;
     private readonly AuthService _auth = authService;
 
-    private int GetPoolId() => _auth.CurrentOwnerId ?? throw new UnauthorizedAccessException("Chưa xác định được phiên đăng nhập.");
+    private int GetPoolId() => _auth.CurrentOwnerId ?? throw new UnauthorizedAccessException("Couldn't identify user.");
 
     public async Task<(bool Success, List<Category>? Data, string? Error)> GetCategoriesAsync()
     {
@@ -27,13 +27,13 @@ public class CategoryService(CategoryRepository categoryRepo, AuthService authSe
 
     public async Task<(bool Success, string? Error)> UpdateCategoryAsync(Category category)
     {
-        try { category.OwnerId = GetPoolId(); var ok = await _repo.UpdateByID(category); return ok ? (true, null) : (false, "Lỗi cập nhật."); }
+        try { category.OwnerId = GetPoolId(); var ok = await _repo.UpdateByID(category); return ok ? (true, null) : (false, "Update error."); }
         catch (Exception ex) { return (false, ex.Message); }
     }
 
     public async Task<(bool Success, string? Error)> DeleteCategoryAsync(int id)
     {
-        try { var ok = await _repo.DeleteByID(id, GetPoolId()); return ok ? (true, null) : (false, "Xóa thất bại."); }
+        try { var ok = await _repo.DeleteByID(id, GetPoolId()); return ok ? (true, null) : (false, "Delete failed."); }
         catch (Exception ex) { return (false, ex.Message); }
     }
 }

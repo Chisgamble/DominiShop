@@ -12,7 +12,7 @@ namespace DominiShop.ViewModel
         private readonly AuthService _authService;
 
         [ObservableProperty]
-        public partial string CurrentUserName { get; set; } = "Đang tải...";
+        public partial string CurrentUserName { get; set; } = "Loading...";
 
         [ObservableProperty]
         public partial string CurrentUserEmail { get; set; } = "email@example.com";

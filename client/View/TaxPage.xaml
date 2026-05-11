@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="DominiShop.View.TaxPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:model="using:DominiShop.Model"
+    xmlns:conv="using:DominiShop.Converter"
+    mc:Ignorable="d">
+
+    <Page.Resources>
+        <conv:TaxValueConverter x:Key="TaxValueConverter"/>
+        <conv:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+    </Page.Resources>
+
+    <Grid Padding="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <InfoBar Grid.Row="0" x:Name="GlobalInfoBar"
+             IsOpen="{x:Bind ViewModel.IsStatusOpen, Mode=TwoWay}"
+             Severity="{x:Bind ViewModel.StatusSeverity, Mode=OneWay}"
+             Title="{x:Bind ViewModel.StatusTitle, Mode=OneWay}"
+             Message="{x:Bind ViewModel.StatusMessage, Mode=OneWay}" />
+
+        <!-- Header -->
+        <RelativePanel Grid.Row="1" Margin="0,0,0,24">
+            <TextBlock Text="Tax Management" Style="{StaticResource TitleTextBlockStyle}" RelativePanel.AlignLeftWithPanel="True"/>
+            <Button Command="{x:Bind ViewModel.AddNewCommand}" 
+                    Style="{StaticResource AccentButtonStyle}" RelativePanel.AlignRightWithPanel="True">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <SymbolIcon Symbol="Add"/>
+                    <TextBlock Text="Add New Tax"/>
+                </StackPanel>
+            </Button>
+        </RelativePanel>
+
+        <!-- Filter Bar -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="12" Margin="0,0,0,16">
+            <ComboBox Header="Type" ItemsSource="{x:Bind ViewModel.TaxTypes}" 
+                      SelectedItem="{x:Bind ViewModel.SelectedType, Mode=TwoWay}" Width="150"/>
+            <ComboBox Header="Sort by" ItemsSource="{x:Bind ViewModel.SortOptions}" 
+                      SelectedItem="{x:Bind ViewModel.SelectedSort, Mode=TwoWay}" Width="180"/>
+            <Button VerticalAlignment="Bottom" Command="{x:Bind ViewModel.LoadDataCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <SymbolIcon Symbol="Refresh"/>
+                    <TextBlock Text="Refresh"/>
+                </StackPanel>
+            </Button>
+        </StackPanel>
+
+        <!-- Data Grid Replacement (ListView) -->
+        <ListView Grid.Row="3" ItemsSource="{x:Bind ViewModel.Taxes}" 
+                  SelectedItem="{x:Bind ViewModel.SelectedTax, Mode=TwoWay}"
+                  SelectionMode="Single">
+            <ListView.HeaderTemplate>
+                <DataTemplate>
+                    <Grid Padding="12,0" Margin="12,0,48,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*"/>
+                            <ColumnDefinition Width="1*"/>
+                            <ColumnDefinition Width="1*"/>
+                            <ColumnDefinition Width="120"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Name" FontWeight="Bold" Grid.Column="0"/>
+                        <TextBlock Text="Type" FontWeight="Bold" Grid.Column="1"/>
+                        <TextBlock Text="Value" FontWeight="Bold" Grid.Column="2"/>
+                        <TextBlock Text="Actions" FontWeight="Bold" Grid.Column="3"/>
+                    </Grid>
+                </DataTemplate>
+            </ListView.HeaderTemplate>
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="model:Tax">
+                    <Grid Padding="12,8" Margin="0,0,32,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*"/>
+                            <ColumnDefinition Width="1*"/>
+                            <ColumnDefinition Width="1*"/>
+                            <ColumnDefinition Width="120"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="{x:Bind Name}" VerticalAlignment="Center" Grid.Column="0"/>
+                        <TextBlock Text="{x:Bind Type}" VerticalAlignment="Center" Grid.Column="1"/>
+                        <TextBlock Text="{Binding Converter={StaticResource TaxValueConverter}}" 
+                                    VerticalAlignment="Center" Grid.Column="2"/>
+                        <StackPanel Orientation="Horizontal" Grid.Column="3" Spacing="8" HorizontalAlignment="Center">
+                            <Button Content="Edit" Click="EditButton_Click" Style="{StaticResource CaptionTextBlockStyle}"/>
+                            <Button Content="Delete" Click="DeleteButton_Click" Foreground="Red"/>
+                        </StackPanel>
+                    </Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+
+        <!-- Pagination -->
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,12,0,0" Spacing="20">
+            <Button Content="Previous" Command="{x:Bind ViewModel.GoPreviousCommand}" 
+                    IsEnabled="True"/>
+            <!-- Logic PageNumber ở ViewModel sẽ xử lý -->
+            <TextBlock Text="{x:Bind ViewModel.CurrentPage, Mode=OneWay}" VerticalAlignment="Center"/>
+            <Button Content="Next" Command="{x:Bind ViewModel.GoNextCommand}"/>
+        </StackPanel>
+
+        <!-- Edit/Add Overlay (Simple Dialog simulation) -->
+        <ContentDialog x:Name="EditDialog" 
+               Title="Tax Details" 
+               PrimaryButtonText="Save" 
+               CloseButtonText="Cancel"
+               DefaultButton="Primary"
+               PrimaryButtonClick="EditDialog_PrimaryButtonClick">
+            <StackPanel Spacing="12" Width="300">
+                <InfoBar IsOpen="{x:Bind ViewModel.HasError, Mode=OneWay}"
+                     Severity="Error"
+                     Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
+                     IsClosable="False" />
+                <TextBox Header="Tax Name" Text="{x:Bind ViewModel.EditingTax.Name, Mode=TwoWay}"/>
+                <ComboBox Header="Type" SelectedItem="{x:Bind ViewModel.EditingTax.Type, Mode=TwoWay}" HorizontalAlignment="Stretch">
+                    <x:String>Percentage</x:String>
+                    <x:String>Fixed Amount</x:String>
+                </ComboBox>
+                <NumberBox Header="Value" Value="{x:Bind ViewModel.EditingTax.ValueAsDouble, Mode=TwoWay}" 
+                           SpinButtonPlacementMode="Inline" SmallChange="1" PlaceholderText="0.00"/>
+            </StackPanel>
+        </ContentDialog>
+    </Grid>
+</Page>

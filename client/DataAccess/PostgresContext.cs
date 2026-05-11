@@ -52,7 +52,6 @@ public partial class PostgresContext : DbContext
             .HasPostgresExtension("extensions", "pg_stat_statements")
             .HasPostgresExtension("extensions", "pgcrypto")
             .HasPostgresExtension("extensions", "uuid-ossp")
-            .HasPostgresExtension("graphql", "pg_graphql")
             .HasPostgresExtension("vault", "supabase_vault");
 
         modelBuilder.Entity<Category>(entity =>
@@ -294,8 +293,7 @@ public partial class PostgresContext : DbContext
 
             entity.HasOne(d => d.Category).WithMany(p => p.Products)
                 .HasForeignKey(d => d.CategoryId)
-                .OnDelete(DeleteBehavior.SetNull)
-                .HasConstraintName("food_category_id_fkey");
+                .HasConstraintName("product_category_id_fkey");
 
             entity.HasOne(d => d.Owner).WithMany(p => p.Products)
                 .HasForeignKey(d => d.OwnerId)
@@ -317,8 +315,14 @@ public partial class PostgresContext : DbContext
                 .HasColumnType("character varying")
                 .HasColumnName("name");
             entity.Property(e => e.OwnerId).HasColumnName("owner_id");
-            entity.Property(e => e.Percent).HasColumnName("percent");
+            entity.Property(e => e.Type)
+                .HasDefaultValueSql("'vnd'::character varying")
+                .HasColumnType("character varying")
+                .HasColumnName("type");
             entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+            entity.Property(e => e.Value)
+                .HasDefaultValueSql("'0'::numeric")
+                .HasColumnName("value");
 
             entity.HasOne(d => d.Owner).WithMany(p => p.Taxes)
                 .HasForeignKey(d => d.OwnerId)
