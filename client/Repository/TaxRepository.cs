@@ -71,6 +71,7 @@ public class TaxRepository : IRepo<Tax, long>
         existing.Name = item.Name;
         existing.Value = item.Value;
         existing.Type = item.Type;
+        existing.AutoApply = item.AutoApply;
         existing.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();

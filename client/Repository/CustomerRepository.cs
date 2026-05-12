@@ -40,6 +40,17 @@ public class CustomerRepository(PostgresContext context) // Modern primary const
         catch (Exception ex) { throw new Exception($"Error fetching customers: {ex.Message}"); }
     }
 
+    public async Task<Customer?> GetByPhoneAsync(string phone, int ownerId, bool includeDeleted = false)
+    {
+        try
+        {
+            var query = _context.Customers.AsNoTracking().Include(c => c.Tier).Where(c => c.OwnerId == ownerId && c.Phone == phone);
+            if (!includeDeleted) query = query.Where(c => c.DeletedAt == null);
+            return await query.FirstOrDefaultAsync();
+        }
+        catch { return null; }
+    }
+
     // From incoming: Rescued the search feature and standardized exception language
     public async Task<List<Customer>> SearchByNameAsync(string name, int ownerId)
     {
@@ -47,9 +58,10 @@ public class CustomerRepository(PostgresContext context) // Modern primary const
         {
             return await _context.Customers
                 .AsNoTracking()
+                .Include(c => c.Tier)
                 .Where(c => c.OwnerId == ownerId
                          && c.DeletedAt == null
-                         && c.Username.Contains(name))
+                         && (c.Username.Contains(name) || c.Phone.Contains(name)))
                 .OrderBy(c => c.Username)
                 .Take(20)
                 .ToListAsync();

@@ -53,7 +53,7 @@ public partial class TaxViewModel(TaxService taxService) : BaseViewModel
     public async Task LoadDataAsync()
     {
         IsLoading = true;
-        var request = new PagingRequest { PageNumber = CurrentPage, PageSize = 10 };
+        var request = new PagingRequest { PageNumber = 1, PageSize = 10000 };
         var typeFilter = SelectedType == "All" ? null : SelectedType;
 
         var result = await _service.GetTaxesAsync(request, typeFilter, SelectedSort);
@@ -63,8 +63,8 @@ public partial class TaxViewModel(TaxService taxService) : BaseViewModel
             Taxes.Clear();
             foreach (var item in result.Data.Items) Taxes.Add(item);
 
-            CanGoNext = result.Data.Pagination.HasNext;
-            CanGoPrevious = result.Data.Pagination.HasPrevious;
+            CanGoNext = false;
+            CanGoPrevious = false;
         }
         IsLoading = false;
     }
@@ -123,7 +123,8 @@ public partial class TaxViewModel(TaxService taxService) : BaseViewModel
         {
             Name = string.Empty,
             Type = "Percentage",
-            Value = 0
+            Value = 0,
+            AutoApply = false
         };
         IsEditMode = true;
     }
@@ -139,6 +140,7 @@ public partial class TaxViewModel(TaxService taxService) : BaseViewModel
             Name = tax.Name,
             Value = tax.Value, // decimal
             Type = tax.Type,
+            AutoApply = tax.AutoApply,
             OwnerId = tax.OwnerId,
             CreatedAt = tax.CreatedAt
         };
@@ -158,7 +160,28 @@ public partial class TaxViewModel(TaxService taxService) : BaseViewModel
     [RelayCommand]
     private async Task ToggleStatus(Tax tax)
     {
-        await Task.CompletedTask;
+        await ToggleAutoApplyAsync(tax, !tax.IsAutoApply);
+    }
+
+    public async Task ToggleAutoApplyAsync(Tax tax, bool isAutoApply)
+    {
+        if (tax == null) return;
+
+        var previousValue = tax.AutoApply;
+        tax.IsAutoApply = isAutoApply;
+
+        IsLoading = true;
+        var result = await _service.SaveTaxAsync(tax);
+        if (!result.Success)
+        {
+            tax.IsAutoApply = previousValue == true;
+
+            StatusTitle = "Error";
+            StatusMessage = result.Error ?? "Could not update auto apply.";
+            StatusSeverity = InfoBarSeverity.Error;
+            IsStatusOpen = true;
+        }
+        IsLoading = false;
     }
 
     [RelayCommand]
