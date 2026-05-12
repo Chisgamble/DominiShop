@@ -56,4 +56,5 @@ public class ConfigService
 
     private string Get(string key, string def) => (string)_localSettings.Values[key] ?? def;
     private void Set(string key, string val) => _localSettings.Values[key] = val;
+
 }

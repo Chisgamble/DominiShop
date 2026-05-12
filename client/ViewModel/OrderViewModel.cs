@@ -16,6 +16,7 @@ public partial class CartItem : ObservableObject
     [ObservableProperty] public partial Product Product { get; set; }
     [ObservableProperty] public partial int Quantity { get; set; }
 
+
     public decimal SubTotal => Product.Price * Quantity;
     public string FormattedSubTotal => SubTotal.ToString("N0") + " ₫";
     public string ProductName => Product.Name;
@@ -49,8 +50,18 @@ public partial class OrderViewModel : BaseViewModel
     private readonly CategoryService _categoryService;
     private readonly VoucherService _voucherService;
     private readonly TaxService _taxService;
+    private readonly SettingService _settingService;
 
     private List<Order> _masterOrders = new();
+    private List<Order> _currentFilteredList = new();
+
+    [ObservableProperty] public partial int CurrentPage { get; set; } = 1;
+    [ObservableProperty] public partial int TotalPages { get; set; } = 1;
+    [ObservableProperty] public partial int PageSize { get; set; }
+    public List<int> PageSizeOptions { get; } = new() { 5, 10, 15, 20 };
+    public bool CanGoPrevious => CurrentPage > 1;
+    public bool CanGoNext => CurrentPage < TotalPages;
+    public string PagingInfo => $"Page {CurrentPage} of {TotalPages}";
 
     public OrderViewModel(
         OrderService orderService,
@@ -58,7 +69,8 @@ public partial class OrderViewModel : BaseViewModel
         ProductService productService,
         CategoryService categoryService,
         VoucherService voucherService,
-        TaxService taxService)
+        TaxService taxService,
+        SettingService settingService)
     {
         _orderService = orderService;
         _customerService = customerService;
@@ -66,6 +78,7 @@ public partial class OrderViewModel : BaseViewModel
         _categoryService = categoryService;
         _voucherService = voucherService;
         _taxService = taxService;
+        _settingService = settingService;
     }
 
     // ============ MASTER LIST STATE ============
@@ -76,41 +89,53 @@ public partial class OrderViewModel : BaseViewModel
     public ObservableCollection<Order> FilteredOrders { get; } = new();
 
     [ObservableProperty] public partial Order? SelectedOrder { get; set; }
+    [ObservableProperty] public partial DateTimeOffset? MinDate { get; set; }
+    [ObservableProperty] public partial DateTimeOffset? MaxDate { get; set; }
 
     partial void OnSearchTextChanged(string value) => FilterOrders();
+    partial void OnMinDateChanged(DateTimeOffset? value) => FilterOrders();
+    partial void OnMaxDateChanged(DateTimeOffset? value) => FilterOrders();
     partial void OnSelectedOrderChanged(Order? value) => LoadSelectedOrderCustomerName();
 
     // Selected order detail — customer name loaded via Phone lookup
     [ObservableProperty] public partial string SelectedOrderCustomerName { get; set; } = "—";
+    [ObservableProperty] public partial string SelectedOrderCustomerTier { get; set; } = "—";
+    [ObservableProperty] public partial string SelectedOrderCustomerTierDiscount { get; set; } = "—";
 
     private async void LoadSelectedOrderCustomerName()
     {
         if (SelectedOrder == null || string.IsNullOrEmpty(SelectedOrder.Phone))
         {
             SelectedOrderCustomerName = "Walk-in";
+            SelectedOrderCustomerTier = "—";
+            SelectedOrderCustomerTierDiscount = "—";
             return;
         }
 
-        // Try to find customer name from already-loaded customer list
-        var customer = _cachedCustomers.FirstOrDefault(c => c.Phone == SelectedOrder.Phone);
+        // Try to find customer including deleted ones
+        var customer = _cachedCustomers.FirstOrDefault(c => c.Phone == SelectedOrder.Phone) 
+                       ?? await _customerService.GetCustomerByPhoneAsync(SelectedOrder.Phone, true);
+
         if (customer != null)
         {
-            SelectedOrderCustomerName = customer.Username;
-        }
-        else
-        {
-            // Lazy load customers if not yet loaded
-            var result = await _customerService.GetCustomersAsync();
-            if (result.Success && result.Data != null)
+            if (customer.DeletedAt != null)
             {
-                _cachedCustomers = result.Data;
-                var found = result.Data.FirstOrDefault(c => c.Phone == SelectedOrder.Phone);
-                SelectedOrderCustomerName = found?.Username ?? SelectedOrder.Phone;
+                SelectedOrderCustomerName = "CUSTOMER IS DELETED";
+                SelectedOrderCustomerTier = "—";
+                SelectedOrderCustomerTierDiscount = "—";
             }
             else
             {
-                SelectedOrderCustomerName = SelectedOrder.Phone;
+                SelectedOrderCustomerName = customer.Username;
+                SelectedOrderCustomerTier = customer.Tier?.Name ?? "Normal";
+                SelectedOrderCustomerTierDiscount = customer.Tier != null ? $"-{customer.Tier.Percent}%" : "0%";
             }
+        }
+        else
+        {
+            SelectedOrderCustomerName = SelectedOrder.Phone;
+            SelectedOrderCustomerTier = "Unknown";
+            SelectedOrderCustomerTierDiscount = "—";
         }
     }
 
@@ -122,6 +147,10 @@ public partial class OrderViewModel : BaseViewModel
     public async Task LoadDataAsync()
     {
         IsLoading = true;
+
+        PageSize = _settingService.GetOrderPageSize();
+        OnPropertyChanged(nameof(PageSize));
+
         try
         {
             var result = await _orderService.GetOrdersAsync();
@@ -130,11 +159,6 @@ public partial class OrderViewModel : BaseViewModel
                 _masterOrders = result.Data;
                 FilterOrders();
             }
-
-            // Preload customers
-            var custResult = await _customerService.GetCustomersAsync();
-            if (custResult.Success && custResult.Data != null)
-                _cachedCustomers = custResult.Data;
         }
         finally { IsLoading = false; }
     }
@@ -145,15 +169,42 @@ public partial class OrderViewModel : BaseViewModel
 
         if (!string.IsNullOrWhiteSpace(SearchText))
         {
-            if (int.TryParse(SearchText, out int searchId))
-                query = query.Where(o => o.Id == searchId);
-            else
-                query = query.Where(o => (o.Phone ?? "").Contains(SearchText, StringComparison.OrdinalIgnoreCase));
+            query = query.Where(o =>
+                o.Id.ToString().Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
+                (o.Phone ?? "").Contains(SearchText, StringComparison.OrdinalIgnoreCase));
         }
 
-        var results = query.ToList();
+        if (MinDate.HasValue)
+            query = query.Where(o => o.CreatedAt >= MinDate.Value.DateTime);
+        if (MaxDate.HasValue)
+            query = query.Where(o => o.CreatedAt <= MaxDate.Value.DateTime);
+
+        _currentFilteredList = query.OrderByDescending(o => o.CreatedAt).ToList();
+
+        CurrentPage = 1;
+        ApplyPaging();
+    }
+
+
+    private void ApplyPaging()
+    {
+        TotalPages = (int)Math.Ceiling(_currentFilteredList.Count / (double)PageSize);
+        if (TotalPages == 0) TotalPages = 1;
+
+        var pagedData = _currentFilteredList
+            .Skip((CurrentPage - 1) * PageSize)
+            .Take(PageSize)
+            .ToList();
+
         FilteredOrders.Clear();
-        foreach (var item in results) FilteredOrders.Add(item);
+        foreach (var order in pagedData)
+        {
+            FilteredOrders.Add(order);
+        }
+
+        OnPropertyChanged(nameof(CanGoPrevious));
+        OnPropertyChanged(nameof(CanGoNext));
+        OnPropertyChanged(nameof(PagingInfo));
     }
 
     // ============ CREATE FLOW — STEP 1: CUSTOMER ============
@@ -165,11 +216,22 @@ public partial class OrderViewModel : BaseViewModel
     [ObservableProperty] public partial Customer? SelectedCustomer { get; set; }
     [ObservableProperty] public partial string CustomerSearchText { get; set; } = string.Empty;
 
+    partial void OnSelectedCustomerChanged(Customer? value) => UpdateCartTotals();
+
     // Create new customer
     [ObservableProperty] public partial bool IsCreatingNewCustomer { get; set; }
     [ObservableProperty] public partial string NewCustomerName { get; set; } = string.Empty;
     [ObservableProperty] public partial string NewCustomerEmail { get; set; } = string.Empty;
     [ObservableProperty] public partial string NewCustomerPhone { get; set; } = string.Empty;
+    [ObservableProperty] public partial CustomerTier? SelectedNewCustomerTier { get; set; }
+    public ObservableCollection<CustomerTier> AvailableCustomerTiers { get; } = new();
+
+    [ObservableProperty] public partial bool IsEditingOrder { get; set; }
+    [ObservableProperty] public partial int? EditingOrderId { get; set; }
+    [ObservableProperty] public partial string WizardTitle { get; set; } = "Create Order";
+
+    public string SubmitButtonText => IsEditingOrder ? "Update Order" : "Create Order";
+    partial void OnIsEditingOrderChanged(bool value) => OnPropertyChanged(nameof(SubmitButtonText));
 
     [ObservableProperty] public partial string? CreateFlowError { get; set; }
 
@@ -199,6 +261,69 @@ public partial class OrderViewModel : BaseViewModel
     }
 
     [RelayCommand]
+    private async Task DeleteOrderAsync(Order order)
+    {
+        if (order == null) return;
+        IsLoading = true;
+        try
+        {
+            var result = await _orderService.DeleteOrderAsync(order.Id);
+            if (result.Success) await LoadDataAsync();
+            else CreateFlowError = result.Error;
+        }
+        finally { IsLoading = false; }
+    }
+
+    [RelayCommand]
+    private async Task StartEditOrderAsync(Order order)
+    {
+        if (order == null) return;
+        await InitializeCreateFlowAsync();
+        
+        IsEditingOrder = true;
+        EditingOrderId = order.Id;
+        WizardTitle = $"Edit Order #{order.Id}";
+
+        // Populate customer
+        SelectedCustomer = _cachedCustomers.FirstOrDefault(c => c.Phone == order.Phone)
+                          ?? await _customerService.GetCustomerByPhoneAsync(order.Phone);
+        
+        // Populate products
+        foreach (var detail in order.OrderDetails)
+        {
+            var product = _allProducts.FirstOrDefault(p => p.Id == detail.ProductId);
+            if (product != null)
+            {
+                product.CartQuantity = detail.Quantity;
+                CartItems.Add(new CartItem { Product = product, Quantity = detail.Quantity });
+            }
+        }
+
+        // Populate voucher
+        if (order.OrderVouchers.Any())
+        {
+            var vId = order.OrderVouchers.First().VoucherId;
+            SelectedVoucher = AvailableVouchers.FirstOrDefault(v => v.Id == vId);
+        }
+
+        // Populate taxes
+        foreach (var taxSel in AvailableTaxes)
+        {
+            taxSel.IsSelected = order.OrderTaxes.Any(ot => ot.TaxId == taxSel.Tax.Id);
+        }
+
+        // Populate shipping
+        if (order.Address != null)
+        {
+            IsOnlineOrder = true;
+            ShippingAddress = order.Address;
+            ShippingFeeInput = (double)(order.ShippingFee ?? 0);
+        }
+
+        UpdateCartTotals();
+    }
+
+    [RelayCommand]
     private async Task CreateNewCustomerAsync()
     {
         CreateFlowError = null;
@@ -206,7 +331,8 @@ public partial class OrderViewModel : BaseViewModel
         {
             Username = NewCustomerName.Trim(),
             Email = NewCustomerEmail.Trim(),
-            Phone = NewCustomerPhone.Trim()
+            Phone = NewCustomerPhone.Trim(),
+            TierId = SelectedNewCustomerTier?.Id
         };
 
         var result = await _customerService.CreateCustomerAsync(customer);
@@ -218,6 +344,7 @@ public partial class OrderViewModel : BaseViewModel
             NewCustomerName = string.Empty;
             NewCustomerEmail = string.Empty;
             NewCustomerPhone = string.Empty;
+            SelectedNewCustomerTier = null;
         }
         else
         {
@@ -311,11 +438,13 @@ public partial class OrderViewModel : BaseViewModel
     // Computed totals
     [ObservableProperty] public partial decimal SubTotal { get; set; }
     [ObservableProperty] public partial decimal DiscountAmount { get; set; }
+    [ObservableProperty] public partial decimal TierDiscountAmount { get; set; }
     [ObservableProperty] public partial decimal TaxAmount { get; set; }
     [ObservableProperty] public partial decimal GrandTotal { get; set; }
 
     [ObservableProperty] public partial string FormattedSubTotal { get; set; } = "0 ₫";
     [ObservableProperty] public partial string FormattedDiscount { get; set; } = "0 ₫";
+    [ObservableProperty] public partial string FormattedTierDiscount { get; set; } = "0 ₫";
     [ObservableProperty] public partial string FormattedTax { get; set; } = "0 ₫";
     [ObservableProperty] public partial string FormattedShipping { get; set; } = "0 ₫";
     [ObservableProperty] public partial string FormattedGrandTotal { get; set; } = "0 ₫";
@@ -345,13 +474,21 @@ public partial class OrderViewModel : BaseViewModel
         }
         FormattedDiscount = DiscountAmount > 0 ? $"-{DiscountAmount:N0} ₫" : "0 ₫";
 
+        // Tier Discount
+        TierDiscountAmount = 0;
+        if (SelectedCustomer?.Tier?.Percent > 0)
+        {
+            TierDiscountAmount = SubTotal * (SelectedCustomer.Tier.Percent.Value / 100m);
+        }
+        FormattedTierDiscount = TierDiscountAmount > 0 ? $"-{TierDiscountAmount:N0} ₫" : "0 ₫";
+
         // Tax
-        var afterDiscount = SubTotal - DiscountAmount;
+        var afterDiscount = SubTotal - DiscountAmount - TierDiscountAmount;
         TaxAmount = 0;
         foreach (var ts in AvailableTaxes.Where(t => t.IsSelected))
         {
             if (ts.Tax.Type == "Percentage")
-                TaxAmount += afterDiscount * (ts.Tax.Value ?? 0) / 100m;
+                TaxAmount += Math.Max(0, afterDiscount) * (ts.Tax.Value ?? 0) / 100m;
             else
                 TaxAmount += ts.Tax.Value ?? 0;
         }
@@ -369,7 +506,7 @@ public partial class OrderViewModel : BaseViewModel
         FormattedShipping = IsOnlineOrder ? (shippingFee > 0 ? $"+{shippingFee:N0} ₫" : "Miễn phí") : "—";
 
         // Grand total
-        GrandTotal = afterDiscount + TaxAmount + shippingFee;
+        GrandTotal = (SubTotal - DiscountAmount - TierDiscountAmount) + TaxAmount + shippingFee;
         if (GrandTotal < 0) GrandTotal = 0;
         FormattedGrandTotal = GrandTotal.ToString("N0") + " ₫";
 
@@ -386,6 +523,9 @@ public partial class OrderViewModel : BaseViewModel
     [RelayCommand]
     private async Task InitializeCreateFlowAsync()
     {
+        IsEditingOrder = false;
+        EditingOrderId = null;
+        WizardTitle = "Create Order";
         CreateFlowError = null;
         CurrentStep = 1;
         SelectedCustomer = null;
@@ -466,6 +606,15 @@ public partial class OrderViewModel : BaseViewModel
                         IsSelected = t.AutoApply == true // Auto-apply taxes
                     });
                 }
+            }
+
+            // Load tiers for new customer creation
+            var tierResult = await _customerService.GetTiersAsync();
+            AvailableCustomerTiers.Clear();
+            if (tierResult.Success && tierResult.Data != null)
+            {
+                foreach (var t in tierResult.Data) AvailableCustomerTiers.Add(t);
+                SelectedNewCustomerTier = AvailableCustomerTiers.FirstOrDefault();
             }
         }
         finally { IsLoading = false; }
@@ -559,10 +708,25 @@ public partial class OrderViewModel : BaseViewModel
         IsLoading = true;
         try
         {
-            var result = await _orderService.CreateOrderAsync(order);
+            (bool Success, Order? Data, string? Error) result;
+            if (IsEditingOrder && EditingOrderId.HasValue)
+            {
+                order.Id = EditingOrderId.Value;
+                result = await _orderService.UpdateOrderAsync(order);
+            }
+            else
+            {
+                result = await _orderService.CreateOrderAsync(order);
+            }
+
             if (result.Success)
             {
+                int savedId = result.Data?.Id ?? (IsEditingOrder ? EditingOrderId ?? 0 : 0);
                 await LoadDataAsync();
+                if (savedId > 0)
+                {
+                    SelectedOrder = FilteredOrders.FirstOrDefault(o => o.Id == savedId);
+                }
                 return true;
             }
             else
@@ -572,5 +736,60 @@ public partial class OrderViewModel : BaseViewModel
             }
         }
         finally { IsLoading = false; }
+    }
+
+    [RelayCommand]
+    public async Task CycleOrderStatusAsync(Order order)
+    {
+        if (order == null) return;
+        
+        var statuses = Order.AvailableStatuses;
+        int currentIndex = Array.IndexOf(statuses, order.Status ?? "Pending");
+        if (currentIndex == -1) currentIndex = 0;
+        
+        int nextIndex = (currentIndex + 1) % statuses.Length;
+        var nextStatus = statuses[nextIndex];
+
+        var result = await _orderService.UpdateOrderStatusAsync(order.Id, nextStatus);
+        if (result.Success)
+        {
+            order.Status = nextStatus;
+            order.NotifyStatusChanged();
+            
+            if (SelectedOrder?.Id == order.Id)
+            {
+                SelectedOrder.NotifyStatusChanged();
+            }
+        }
+    }
+
+    partial void OnPageSizeChanged(int value)
+    {
+        if (value > 0)
+        {
+            _settingService.SaveOrderPageSize(value);
+        }
+        CurrentPage = 1;
+        ApplyPaging();
+    }
+
+    [RelayCommand]
+    private void NextPage()
+    {
+        if (CanGoNext)
+        {
+            CurrentPage++;
+            ApplyPaging();
+        }
+    }
+
+    [RelayCommand]
+    private void PreviousPage()
+    {
+        if (CanGoPrevious)
+        {
+            CurrentPage--;
+            ApplyPaging();
+        }
     }
 }

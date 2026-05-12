@@ -10,9 +10,10 @@ using System.Threading.Tasks;
 
 namespace DominiShop.ViewModel
 {
-    public partial class CustomerViewModel(CustomerService customerService) : BaseViewModel
+    public partial class CustomerViewModel(CustomerService customerService, SettingService settingService) : BaseViewModel
     {
         private readonly CustomerService _service = customerService;
+        private readonly SettingService _settingService = settingService;
 
         private List<Customer> _masterCustomers = new();
         private List<CustomerTier> _masterTiers = new();
@@ -21,20 +22,32 @@ namespace DominiShop.ViewModel
         [ObservableProperty] public partial bool IsEditMode { get; set; }
         [ObservableProperty] public partial bool IsTierTab { get; set; } = false;
 
+        [ObservableProperty] public partial int CurrentPage { get; set; } = 1;
+        [ObservableProperty] public partial int TotalPages { get; set; } = 1;
+        [ObservableProperty] public partial int PageSize { get; set; } = settingService.GetCustomerPageSize();
+
+        public List<int> PageSizeOptions { get; } = new() { 5, 10, 15, 20 };
+        public bool CanGoPrevious => CurrentPage > 1;
+        public bool CanGoNext => CurrentPage < TotalPages;
+        public string PagingInfo => $"Page {CurrentPage} of {TotalPages}";
+
+        // Biến lưu kết quả sau khi lọc (để cắt trang)
+        private List<Customer> _currentFilteredList = new();
+
         public ObservableCollection<Customer> FilteredCustomers { get; } = new();
         public ObservableCollection<CustomerTier> FilteredTiers { get; } = new();
 
         [ObservableProperty] public partial string SearchText { get; set; } = string.Empty;
-        [ObservableProperty] public partial string SelectedSortOption { get; set; } = "Mới nhất";
-        [ObservableProperty] public partial string SelectedTierFilter { get; set; } = "Tất cả";
+        [ObservableProperty] public partial string SelectedSortOption { get; set; } = "Newest";
+        [ObservableProperty] public partial string SelectedTierFilter { get; set; } = "All";
 
         public List<string> SortOptions { get; } = new()
         {
-            "Mới nhất", "Cũ nhất", "Tên (A-Z)", "Tên (Z-A)",
-            "Điểm (Cao-Thấp)", "Điểm (Thấp-Cao)"
+            "Newest", "Oldest", "Name (A-Z)", "Name (Z-A)",
+            "Points (High-Low)", "Points (Low-High)"
         };
 
-        public ObservableCollection<string> TierFilterOptions { get; } = new() { "Tất cả" };
+        public ObservableCollection<string> TierFilterOptions { get; } = new() { "All" };
 
         partial void OnSearchTextChanged(string value) => FilterData();
         partial void OnSelectedSortOptionChanged(string value) => FilterData();
@@ -75,6 +88,15 @@ namespace DominiShop.ViewModel
         public async Task LoadDataAsync()
         {
             IsLoading = true;
+
+            int savedPageSize = _settingService.GetCustomerPageSize();
+            if (PageSize != savedPageSize)
+            {
+                PageSize = savedPageSize;
+            }
+
+            OnPropertyChanged(nameof(PageSize));
+
             try
             {
                 var (csOk, customers, csErr) = await _service.GetCustomersAsync();
@@ -89,13 +111,15 @@ namespace DominiShop.ViewModel
                 _masterCustomers = customers;
 
                 // Rebuild tier filter options
+                var currentFilter = SelectedTierFilter;
                 TierFilterOptions.Clear();
-                TierFilterOptions.Add("Tất cả");
+                TierFilterOptions.Add("All");
                 foreach (var t in _masterTiers) TierFilterOptions.Add(t.Name);
+                SelectedTierFilter = string.IsNullOrEmpty(currentFilter) || !TierFilterOptions.Contains(currentFilter) ? "All" : currentFilter;
 
                 // Rebuild TierList for ComboBox (with a "no tier" sentinel)
                 TierList.Clear();
-                TierList.Add(new CustomerTier { Id = -1, Name = "(Không có hạng)" });
+                TierList.Add(new CustomerTier { Id = -1, Name = "(No tier)" });
                 foreach (var t in _masterTiers) TierList.Add(t);
 
                 RebuildTiers();
@@ -124,7 +148,7 @@ namespace DominiShop.ViewModel
             }
 
             // Tier filter
-            if (SelectedTierFilter != "Tất cả")
+            if (SelectedTierFilter != "All")
             {
                 var tier = _masterTiers.FirstOrDefault(t => t.Name == SelectedTierFilter);
                 if (tier != null)
@@ -136,16 +160,18 @@ namespace DominiShop.ViewModel
             // Sort
             q = SelectedSortOption switch
             {
-                "Cũ nhất" => q.OrderBy(c => c.CreatedAt),
-                "Tên (A-Z)" => q.OrderBy(c => c.Username),
-                "Tên (Z-A)" => q.OrderByDescending(c => c.Username),
-                "Điểm (Cao-Thấp)" => q.OrderByDescending(c => c.TotalPoints),
-                "Điểm (Thấp-Cao)" => q.OrderBy(c => c.TotalPoints),
+                "Oldest" => q.OrderBy(c => c.CreatedAt),
+                "Name (A-Z)" => q.OrderBy(c => c.Username),
+                "Name (Z-A)" => q.OrderByDescending(c => c.Username),
+                "Points (High-Low)" => q.OrderByDescending(c => c.TotalPoints),
+                "Points (Low-High)" => q.OrderBy(c => c.TotalPoints),
                 _ => q.OrderByDescending(c => c.CreatedAt)
             };
 
-            FilteredCustomers.Clear();
-            foreach (var c in q) FilteredCustomers.Add(c);
+            // THAY VÌ GÁN TRỰC TIẾP, TA LƯU VÀO BIẾN TẠM VÀ GỌI CẮT TRANG
+            _currentFilteredList = q.ToList();
+            CurrentPage = 1;
+            ApplyPaging();
         }
 
         [RelayCommand]
@@ -250,5 +276,34 @@ namespace DominiShop.ViewModel
             var (ok, err) = await _service.DeleteTierAsync(tier.Id);
             if (ok) await LoadDataAsync();
         }
+
+        private void ApplyPaging()
+        {
+            TotalPages = (int)Math.Ceiling(_currentFilteredList.Count / (double)PageSize);
+            if (TotalPages == 0) TotalPages = 1;
+
+            var pagedData = _currentFilteredList
+                .Skip((CurrentPage - 1) * PageSize)
+                .Take(PageSize)
+                .ToList();
+
+            FilteredCustomers.Clear();
+            foreach (var item in pagedData) FilteredCustomers.Add(item);
+
+            OnPropertyChanged(nameof(CanGoPrevious));
+            OnPropertyChanged(nameof(CanGoNext));
+            OnPropertyChanged(nameof(PagingInfo));
+        }
+
+        partial void OnPageSizeChanged(int value)
+        {
+            if (value > 0) _settingService.SaveCustomerPageSize(value);
+            CurrentPage = 1;
+            ApplyPaging();
+        }
+
+        [RelayCommand] private void NextPage() { if (CanGoNext) { CurrentPage++; ApplyPaging(); } }
+        [RelayCommand] private void PreviousPage() { if (CanGoPrevious) { CurrentPage--; ApplyPaging(); } }
+
     }
 }

@@ -10,9 +10,10 @@ using System.Threading.Tasks;
 
 namespace DominiShop.ViewModel;
 
-public partial class CategoryViewModel(CategoryService categoryService) : BaseViewModel
+public partial class CategoryViewModel(CategoryService categoryService, SettingService settingService) : BaseViewModel
 {
     private readonly CategoryService _service = categoryService;
+    private readonly SettingService _settingService = settingService;
     private List<Category> _masterCategories = new();
 
     [ObservableProperty] public partial bool IsLoading { get; set; }
@@ -24,9 +25,9 @@ public partial class CategoryViewModel(CategoryService categoryService) : BaseVi
 
     [ObservableProperty] public partial int CurrentPage { get; set; } = 1;
     [ObservableProperty] public partial int TotalPages { get; set; } = 1;
-    [ObservableProperty] public partial int PageSize { get; set; } = 10;
+    [ObservableProperty] public partial int PageSize { get; set; } = settingService.GetCategoryPageSize();
 
-    public List<int> PageSizeOptions { get; } = new() { 10, 20, 50, 100 };
+    public List<int> PageSizeOptions { get; } = new() { 5, 10, 15, 20 };
     public bool CanGoPrevious => CurrentPage > 1;
     public bool CanGoNext => CurrentPage < TotalPages;
     public string PagingInfo => $"Page {CurrentPage} of {TotalPages}";
@@ -62,6 +63,15 @@ public partial class CategoryViewModel(CategoryService categoryService) : BaseVi
     public async Task LoadDataAsync()
     {
         IsLoading = true;
+
+        int savedPageSize = _settingService.GetCategoryPageSize();
+        if (PageSize != savedPageSize)
+        {
+            PageSize = savedPageSize;
+        }
+
+        OnPropertyChanged(nameof(PageSize));
+
         try
         {
             var result = await _service.GetCategoriesAsync();
@@ -163,6 +173,11 @@ public partial class CategoryViewModel(CategoryService categoryService) : BaseVi
 
     partial void OnPageSizeChanged(int value)
     {
+        if (value > 0)
+        {
+            _settingService.SaveCategoryPageSize(value);
+        }
+
         CurrentPage = 1;
         ApplyPaging();
     }
