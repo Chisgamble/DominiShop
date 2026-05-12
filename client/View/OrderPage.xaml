@@ -18,8 +18,8 @@
 
     <Grid Padding="20">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="3.5*"/>
-            <ColumnDefinition Width="2*"/>
+            <ColumnDefinition Width="3.75*"/>
+            <ColumnDefinition Width="1.75*"/>
         </Grid.ColumnDefinitions>
 
         <!-- ============ MASTER PANEL (LEFT) ============ -->
