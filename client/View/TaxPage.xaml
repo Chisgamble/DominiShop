@@ -32,7 +32,7 @@
         <!-- Header -->
         <RelativePanel Grid.Row="1" Margin="0,0,0,24">
             <TextBlock Text="Tax Management" Style="{StaticResource TitleTextBlockStyle}" RelativePanel.AlignLeftWithPanel="True"/>
-            <Button Command="{x:Bind ViewModel.AddNewCommand}" 
+            <Button Click="AddNew_Click" 
                     Style="{StaticResource AccentButtonStyle}" RelativePanel.AlignRightWithPanel="True">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <SymbolIcon Symbol="Add"/>

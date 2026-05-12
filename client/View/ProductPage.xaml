@@ -10,6 +10,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <Grid Grid.Row="0" Margin="0,0,0,20">
@@ -74,6 +75,23 @@
             </controls:DataGrid.Columns>
         </controls:DataGrid>
 
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="15" Margin="0,15,0,0">
+            <TextBlock Text="Items per page:" VerticalAlignment="Center" Foreground="Gray"/>
+            <ComboBox ItemsSource="{x:Bind ViewModel.PageSizeOptions}" SelectedItem="{x:Bind ViewModel.PageSize, Mode=TwoWay}" Width="80" Height="32"/>
+
+            <StackPanel Orientation="Horizontal" Spacing="5" Margin="20,0,0,0">
+                <Button Command="{x:Bind ViewModel.PreviousPageCommand}" IsEnabled="{x:Bind ViewModel.CanGoPrevious, Mode=OneWay}" Width="36" Height="32" ToolTipService.ToolTip="Previous Page">
+                    <FontIcon Glyph="&#xE76B;" FontSize="12"/>
+                </Button>
+
+                <TextBlock Text="{x:Bind ViewModel.PagingInfo, Mode=OneWay}" VerticalAlignment="Center" Margin="10,0" FontWeight="SemiBold"/>
+
+                <Button Command="{x:Bind ViewModel.NextPageCommand}" IsEnabled="{x:Bind ViewModel.CanGoNext, Mode=OneWay}" Width="36" Height="32" ToolTipService.ToolTip="Next Page">
+                    <FontIcon Glyph="&#xE76C;" FontSize="12"/>
+                </Button>
+            </StackPanel>
+        </StackPanel>
+
         <ContentDialog x:Name="DetailDialog" Title="Product Details" PrimaryButtonText="Edit" SecondaryButtonText="Delete" CloseButtonText="Close" DefaultButton="Primary">
             <StackPanel Spacing="16" Margin="0,10,0,0" Width="400">
                 <StackPanel>
@@ -121,9 +139,23 @@
 
                     <TextBox Header="Product Name" Text="{x:Bind ViewModel.EditingProduct.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
-                    <ComboBox Header="Category (Required)" ItemsSource="{x:Bind ViewModel.AvailableCategories}" 
-                              SelectedValue="{x:Bind ViewModel.EditingProduct.CategoryId, Mode=TwoWay}" 
-                              SelectedValuePath="Id" DisplayMemberPath="Name" HorizontalAlignment="Stretch"/>
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Category (Required)" />
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <ComboBox Grid.Column="0" ItemsSource="{x:Bind ViewModel.AvailableCategories}" 
+                                      SelectedValue="{x:Bind ViewModel.EditingCategoryId, Mode=TwoWay}" 
+                                      SelectedValuePath="Id" DisplayMemberPath="Name" HorizontalAlignment="Stretch" PlaceholderText="Select a category"/>
+
+                            <Button Grid.Column="1" Click="OnQuickAddCategoryClick" Height="32" Width="36" ToolTipService.ToolTip="Create new category">
+                                <FontIcon Glyph="&#xE710;" FontSize="14"/>
+                            </Button>
+                        </Grid>
+                    </StackPanel>
 
                     <Grid ColumnSpacing="15">
                         <Grid.ColumnDefinitions>
@@ -150,6 +182,20 @@
 
                 </StackPanel>
             </ScrollViewer>
+        </ContentDialog>
+        <ContentDialog x:Name="QuickAddCategoryDialog" Title="Quick Add Category"
+                       PrimaryButtonText="Save Category" CloseButtonText="Cancel" DefaultButton="Primary"
+                       PrimaryButtonClick="OnQuickAddCategorySaveClick">
+            <StackPanel Spacing="15" Margin="0,10,0,0" Width="350">
+                <InfoBar x:Name="QuickCategoryError" IsOpen="False" Severity="Error" IsClosable="False" Margin="0,0,0,5"/>
+
+                <TextBox Header="Category Name *" PlaceholderText="e.g. Nước ngọt"
+                         Text="{x:Bind ViewModel.QuickAddCategory.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+
+                <TextBox Header="Note (Optional)" 
+                         Text="{x:Bind ViewModel.QuickAddCategory.Note, Mode=TwoWay}" 
+                         Height="60" TextWrapping="Wrap" AcceptsReturn="True"/>
+            </StackPanel>
         </ContentDialog>
     </Grid>
 </Page>

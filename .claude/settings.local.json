@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd /d \"D:\\\\HCMUS\\\\Nam 3\\\\KTPM\\\\HK2\\\\Windows\\\\Project\\\\DominiShop\\\\client\")",
+      "Bash(dotnet build *)"
+    ]
+  }
+}
