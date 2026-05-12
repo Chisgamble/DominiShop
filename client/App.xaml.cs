@@ -109,11 +109,13 @@ namespace DominiShop
             // main
             services.AddSingleton<MainViewModel>();
 
+            // category
             services.AddTransient<IRepo<Category, int>, CategoryRepository>();
             services.AddTransient<CategoryRepository>();
             services.AddSingleton<CategoryService>();
             services.AddTransient<CategoryViewModel>();
 
+            // product
             services.AddTransient<ProductRepository>();
             services.AddTransient<ProductService>();
             services.AddTransient<ProductViewModel>();
@@ -126,6 +128,11 @@ namespace DominiShop
             services.AddTransient<OrderRepository>();
             services.AddTransient<OrderService>();
             services.AddTransient<OrderViewModel>();
+
+            // dashboard
+            services.AddSingleton<DashboardService>();
+            services.AddTransient<DashboardRepository>();
+            services.AddTransient<DashboardViewModel>();
 
             return services.BuildServiceProvider();
         }
