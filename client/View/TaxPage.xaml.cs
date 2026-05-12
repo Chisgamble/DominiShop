@@ -1,24 +1,11 @@
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 using DominiShop.Model;
 using DominiShop.ViewModel;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using System;
 using System.Threading.Tasks;
 
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
 namespace DominiShop.View;
 
 public sealed partial class TaxPage : Page
@@ -30,19 +17,22 @@ public sealed partial class TaxPage : Page
         this.InitializeComponent();
         this.Loaded += (s, e) => ViewModel.LoadDataCommand.Execute(null);
 
-        ViewModel.PropertyChanged += async (s, e) =>
-        {
-            if (e.PropertyName == nameof(ViewModel.IsEditMode) && ViewModel.IsEditMode)
-            {
-                await EditDialog.ShowAsync();
-            }
-        };
     }
 
-    private void EditButton_Click(object sender, RoutedEventArgs e)
+    private async void AddNew_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.AddNewCommand.Execute(null);
+        EditDialog.XamlRoot = this.XamlRoot;
+        await EditDialog.ShowAsync();
+    }
+
+    private async void EditButton_Click(object sender, RoutedEventArgs e)
     {
         var tax = (sender as Button)?.DataContext as Tax;
+
         ViewModel.EditCommand.Execute(tax);
+        EditDialog.XamlRoot = this.XamlRoot;
+        await EditDialog.ShowAsync();
     }
 
     private async void EditDialog_PrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
