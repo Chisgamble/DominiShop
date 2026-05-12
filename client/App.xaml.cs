@@ -17,6 +17,7 @@ using Microsoft.UI.Xaml.Navigation;
 using Microsoft.UI.Xaml.Shapes;
 using Serilog;
 using Supabase;
+using Supabase.Gotrue;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -60,19 +61,22 @@ namespace DominiShop
         private static ServiceProvider BuildServices()
         {
             var services = new ServiceCollection();
+            var config = new ConfigService();
+            services.AddSingleton(config);
 
             var configuration = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
             .Build();
 
-            var url = configuration["Supabase:Url"];
-            var key = configuration["Supabase:Key"];
+            var url = string.IsNullOrEmpty(config.SupabaseUrl) ? configuration["Supabase:Url"] : config.SupabaseUrl;
+            var key = string.IsNullOrEmpty(config.SupabaseKey) ? configuration["Supabase:Key"] : config.SupabaseKey;
+            var db = string.IsNullOrEmpty(config.DbConnection) ? configuration.GetConnectionString("DefaultConnection") : config.DbConnection;
             var options = new SupabaseOptions { AutoConnectRealtime = true };
 
             services.AddDbContext<PostgresContext>(options =>
                 options.UseNpgsql(
-                    configuration.GetConnectionString("DefaultConnection"),
+                    db,
                     npgsqlOptions => npgsqlOptions.EnableRetryOnFailure(
                         maxRetryCount: 3,
                         maxRetryDelay: TimeSpan.FromSeconds(5),
@@ -81,6 +85,10 @@ namespace DominiShop
                 ServiceLifetime.Transient);
 
             services.AddSingleton(provider => new Supabase.Client(url!, key, options));
+
+            //config
+            services.AddSingleton<ConfigService>();
+            services.AddTransient<ConfigViewModel>();
 
             // navigation
             services.AddSingleton<INavigationService, NavigationService>();
