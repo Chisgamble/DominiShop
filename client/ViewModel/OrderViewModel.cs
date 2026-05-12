@@ -147,6 +147,10 @@ public partial class OrderViewModel : BaseViewModel
     public async Task LoadDataAsync()
     {
         IsLoading = true;
+
+        PageSize = _settingService.GetOrderPageSize();
+        OnPropertyChanged(nameof(PageSize));
+
         try
         {
             var result = await _orderService.GetOrdersAsync();
@@ -155,11 +159,6 @@ public partial class OrderViewModel : BaseViewModel
                 _masterOrders = result.Data;
                 FilterOrders();
             }
-
-            // Preload customers
-            var custResult = await _customerService.GetCustomersAsync();
-            if (custResult.Success && custResult.Data != null)
-                _cachedCustomers = custResult.Data;
         }
         finally { IsLoading = false; }
     }
@@ -170,25 +169,42 @@ public partial class OrderViewModel : BaseViewModel
 
         if (!string.IsNullOrWhiteSpace(SearchText))
         {
-            query = query.Where(o => 
-                o.Id.ToString().Contains(SearchText) || 
+            query = query.Where(o =>
+                o.Id.ToString().Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
                 (o.Phone ?? "").Contains(SearchText, StringComparison.OrdinalIgnoreCase));
         }
- 
+
         if (MinDate.HasValue)
-        {
-            var min = MinDate.Value.Date;
-            query = query.Where(o => o.OrderAt.Date >= min);
-        }
+            query = query.Where(o => o.CreatedAt >= MinDate.Value.DateTime);
         if (MaxDate.HasValue)
+            query = query.Where(o => o.CreatedAt <= MaxDate.Value.DateTime);
+
+        _currentFilteredList = query.OrderByDescending(o => o.CreatedAt).ToList();
+
+        CurrentPage = 1;
+        ApplyPaging();
+    }
+
+
+    private void ApplyPaging()
+    {
+        TotalPages = (int)Math.Ceiling(_currentFilteredList.Count / (double)PageSize);
+        if (TotalPages == 0) TotalPages = 1;
+
+        var pagedData = _currentFilteredList
+            .Skip((CurrentPage - 1) * PageSize)
+            .Take(PageSize)
+            .ToList();
+
+        FilteredOrders.Clear();
+        foreach (var order in pagedData)
         {
-            var max = MaxDate.Value.Date;
-            query = query.Where(o => o.OrderAt.Date <= max);
+            FilteredOrders.Add(order);
         }
 
-        var results = query.ToList();
-        FilteredOrders.Clear();
-        foreach (var item in results) FilteredOrders.Add(item);
+        OnPropertyChanged(nameof(CanGoPrevious));
+        OnPropertyChanged(nameof(CanGoNext));
+        OnPropertyChanged(nameof(PagingInfo));
     }
 
     // ============ CREATE FLOW — STEP 1: CUSTOMER ============
@@ -744,6 +760,36 @@ public partial class OrderViewModel : BaseViewModel
             {
                 SelectedOrder.NotifyStatusChanged();
             }
+        }
+    }
+
+    partial void OnPageSizeChanged(int value)
+    {
+        if (value > 0)
+        {
+            _settingService.SaveOrderPageSize(value);
+        }
+        CurrentPage = 1;
+        ApplyPaging();
+    }
+
+    [RelayCommand]
+    private void NextPage()
+    {
+        if (CanGoNext)
+        {
+            CurrentPage++;
+            ApplyPaging();
+        }
+    }
+
+    [RelayCommand]
+    private void PreviousPage()
+    {
+        if (CanGoPrevious)
+        {
+            CurrentPage--;
+            ApplyPaging();
         }
     }
 }

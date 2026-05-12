@@ -15,6 +15,7 @@ public partial class SettingsViewModel : BaseViewModel
     [ObservableProperty] private int _customerPageSize;
     [ObservableProperty] private int _taxPageSize;
     [ObservableProperty] private int _orderPageSize;
+    [ObservableProperty] private int _voucherPageSize;
 
     public SettingsViewModel(SettingService settingService)
     {
@@ -25,6 +26,7 @@ public partial class SettingsViewModel : BaseViewModel
         _customerPageSize = _settingService.GetCustomerPageSize();
         _taxPageSize = _settingService.GetTaxPageSize();
         _orderPageSize = _settingService.GetOrderPageSize();
+        _voucherPageSize = _settingService.GetVoucherPageSize();
     }
 
     partial void OnProductPageSizeChanged(int value) => _settingService.SaveProductPageSize(value);
@@ -32,4 +34,6 @@ public partial class SettingsViewModel : BaseViewModel
     partial void OnCustomerPageSizeChanged(int value) => _settingService.SaveCustomerPageSize(value);
     partial void OnTaxPageSizeChanged(int value) => _settingService.SaveTaxPageSize(value);
     partial void OnOrderPageSizeChanged(int value) => _settingService.SaveOrderPageSize(value);
+
+    partial void OnVoucherPageSizeChanged(int value) => _settingService.SaveVoucherPageSize(value);
 }

@@ -27,6 +27,7 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <Grid Grid.Row="0" Margin="0,0,0,16">
@@ -97,6 +98,29 @@
                     </controls:DataGridTemplateColumn>
                 </controls:DataGrid.Columns>
             </controls:DataGrid>
+            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="15" Margin="0,15,0,0">
+                <TextBlock Text="Items per page:" VerticalAlignment="Center" Foreground="Gray"/>
+                <ComboBox ItemsSource="{x:Bind ViewModel.PageSizeOptions}" 
+                          SelectedItem="{x:Bind ViewModel.PageSize, Mode=TwoWay}" 
+                          Width="80" Height="32"/>
+
+                <StackPanel Orientation="Horizontal" Spacing="5" Margin="20,0,0,0">
+                    <Button Command="{x:Bind ViewModel.PreviousPageCommand}" 
+                            IsEnabled="{x:Bind ViewModel.CanGoPrevious, Mode=OneWay}" 
+                            Width="36" Height="32">
+                        <FontIcon Glyph="&#xE76B;" FontSize="12"/>
+                    </Button>
+
+                    <TextBlock Text="{x:Bind ViewModel.PagingInfo, Mode=OneWay}" 
+                               VerticalAlignment="Center" Margin="10,0" FontWeight="SemiBold"/>
+
+                    <Button Command="{x:Bind ViewModel.NextPageCommand}" 
+                            IsEnabled="{x:Bind ViewModel.CanGoNext, Mode=OneWay}" 
+                            Width="36" Height="32">
+                        <FontIcon Glyph="&#xE76C;" FontSize="12"/>
+                    </Button>
+                </StackPanel>
+            </StackPanel>
         </Grid>
 
         <!-- ============ DETAIL PANEL (RIGHT) ============ -->

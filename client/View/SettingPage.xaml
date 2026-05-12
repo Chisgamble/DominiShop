@@ -75,6 +75,19 @@
               SelectedItem="{x:Bind ViewModel.OrderPageSize, Mode=TwoWay}"/>
                 </Grid>
 
+                <Grid ColumnSpacing="20">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="Voucher Items Per Page" FontWeight="SemiBold"/>
+                        <TextBlock Text="Number of vouchers displayed per page." FontSize="12" Foreground="Gray"/>
+                    </StackPanel>
+                    <ComboBox Grid.Column="1" Width="100" ItemsSource="{x:Bind ViewModel.PageSizeOptions}" 
+                              SelectedItem="{x:Bind ViewModel.VoucherPageSize, Mode=TwoWay}"/>
+                </Grid>
+
             </StackPanel>
         </Expander>
 
