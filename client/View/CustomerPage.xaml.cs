@@ -13,10 +13,6 @@ public sealed partial class CustomerPage : Page
 {
     public CustomerViewModel ViewModel { get; }
 
-    // Guards against OnCustomerRowSelected opening DetailDialog when the
-    // inline delete button fires (which also triggers SelectionChanged).
-    private bool _skipDetailDialog = false;
-
     public CustomerPage()
     {
         ViewModel = App.Services.GetRequiredService<CustomerViewModel>();
@@ -27,10 +23,10 @@ public sealed partial class CustomerPage : Page
     // ── Dialog title helpers (used via x:Bind function syntax) ──────────────
 
     public string GetCustomerDialogTitle(bool isEditMode) =>
-        isEditMode ? "Cập nhật khách hàng" : "Thêm khách hàng mới";
+        isEditMode ? "Update customer" : "Add new customer";
 
     public string GetTierDialogTitle(bool isEditMode) =>
-        isEditMode ? "Cập nhật hạng" : "Thêm hạng mới";
+        isEditMode ? "Update tier" : "Add new tier";
 
     // ── Tab changed ──────────────────────────────────────────────────────────
 
@@ -53,17 +49,13 @@ public sealed partial class CustomerPage : Page
         await CustomerEditDialog.ShowAsync();
     }
 
-    // Row click → detail dialog
-    private async void OnCustomerRowSelected(object sender, SelectionChangedEventArgs e)
+    // Inline row view button
+    private async void OnViewCustomerRowClick(object sender, RoutedEventArgs e)
     {
-        if (ViewModel.SelectedCustomer == null) return;
-        if (_skipDetailDialog)
-        {
-            _skipDetailDialog = false;
-            return;
-        }
+        var customer = (sender as Button)?.DataContext as Customer;
+        if (customer == null) return;
 
-        var customer = ViewModel.SelectedCustomer;
+        ViewModel.SelectedCustomer = customer;
 
         CustomerDetailDialog.XamlRoot = this.XamlRoot;
         var result = await CustomerDetailDialog.ShowAsync();
@@ -92,15 +84,15 @@ public sealed partial class CustomerPage : Page
         var errors = new List<string>();
 
         if (string.IsNullOrWhiteSpace(ViewModel.EditingCustomer.Username))
-            errors.Add("Tên khách hàng là bắt buộc.");
+            errors.Add("Customer name is required.");
 
         if (string.IsNullOrWhiteSpace(ViewModel.EditingCustomer.Phone))
-            errors.Add("Số điện thoại là bắt buộc.");
+            errors.Add("Phone number is required.");
 
         if (string.IsNullOrWhiteSpace(ViewModel.EditingCustomer.Email))
-            errors.Add("Email là bắt buộc.");
+            errors.Add("Email is required.");
         else if (!ViewModel.EditingCustomer.Email.Contains('@'))
-            errors.Add("Email không hợp lệ.");
+            errors.Add("Invalid email.");
 
         if (errors.Count > 0)
         {
@@ -121,7 +113,6 @@ public sealed partial class CustomerPage : Page
         var customer = (sender as Button)?.DataContext as Customer;
         if (customer == null) return;
 
-        _skipDetailDialog = true;
         ViewModel.SelectedCustomer = null;
 
         await ConfirmAndDeleteCustomer(customer);
@@ -131,10 +122,10 @@ public sealed partial class CustomerPage : Page
     {
         var confirm = new ContentDialog
         {
-            Title = "Xác nhận xoá",
-            Content = $"Bạn có chắc muốn xoá khách hàng '{customer.Username}' ({customer.Phone})?\nHành động này không thể hoàn tác.",
-            PrimaryButtonText = "Xoá",
-            CloseButtonText = "Huỷ",
+            Title = "Confirm delete",
+            Content = $"Are you sure you want to delete customer '{customer.Username}' ({customer.Phone})?\nThis action cannot be undone.",
+            PrimaryButtonText = "Delete",
+            CloseButtonText = "Cancel",
             XamlRoot = this.XamlRoot
         };
 
@@ -174,13 +165,13 @@ public sealed partial class CustomerPage : Page
         var errors = new List<string>();
 
         if (string.IsNullOrWhiteSpace(ViewModel.EditingTier.Name))
-            errors.Add("Tên hạng là bắt buộc.");
+            errors.Add("Tier name is required.");
 
         if (ViewModel.EditingTierMinPoint < 0)
-            errors.Add("Điểm tối thiểu không được âm.");
+            errors.Add("Minimum points cannot be negative.");
 
         if (ViewModel.EditingTierPercent < 0 || ViewModel.EditingTierPercent > 100)
-            errors.Add("Phần trăm giảm giá phải từ 0 đến 100.");
+            errors.Add("Discount percentage must be between 0 and 100.");
 
         if (errors.Count > 0)
         {
@@ -203,10 +194,10 @@ public sealed partial class CustomerPage : Page
 
         var confirm = new ContentDialog
         {
-            Title = "Xác nhận xoá hạng",
-            Content = $"Xoá hạng '{tier.Name}'? Khách hàng thuộc hạng này sẽ không còn hạng nữa.",
-            PrimaryButtonText = "Xoá",
-            CloseButtonText = "Huỷ",
+            Title = "Confirm delete tier",
+            Content = $"Delete tier '{tier.Name}'? Customers in this tier will no longer have a tier.",
+            PrimaryButtonText = "Delete",
+            CloseButtonText = "Cancel",
             XamlRoot = this.XamlRoot
         };
 
