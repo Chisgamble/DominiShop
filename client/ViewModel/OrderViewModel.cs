@@ -82,12 +82,16 @@ public partial class OrderViewModel : BaseViewModel
 
     // Selected order detail — customer name loaded via Phone lookup
     [ObservableProperty] public partial string SelectedOrderCustomerName { get; set; } = "—";
+    [ObservableProperty] public partial string SelectedOrderCustomerTier { get; set; } = "—";
+    [ObservableProperty] public partial string SelectedOrderCustomerTierDiscount { get; set; } = "—";
 
     private async void LoadSelectedOrderCustomerName()
     {
         if (SelectedOrder == null || string.IsNullOrEmpty(SelectedOrder.Phone))
         {
             SelectedOrderCustomerName = "Walk-in";
+            SelectedOrderCustomerTier = "—";
+            SelectedOrderCustomerTierDiscount = "—";
             return;
         }
 
@@ -96,6 +100,8 @@ public partial class OrderViewModel : BaseViewModel
         if (customer != null)
         {
             SelectedOrderCustomerName = customer.Username;
+            SelectedOrderCustomerTier = customer.Tier?.Name ?? "Normal";
+            SelectedOrderCustomerTierDiscount = customer.Tier != null ? $"-{customer.Tier.Percent}%" : "0%";
         }
         else
         {
@@ -106,10 +112,14 @@ public partial class OrderViewModel : BaseViewModel
                 _cachedCustomers = result.Data;
                 var found = result.Data.FirstOrDefault(c => c.Phone == SelectedOrder.Phone);
                 SelectedOrderCustomerName = found?.Username ?? SelectedOrder.Phone;
+                SelectedOrderCustomerTier = found?.Tier?.Name ?? "Normal";
+                SelectedOrderCustomerTierDiscount = found?.Tier != null ? $"-{found.Tier.Percent}%" : "0%";
             }
             else
             {
                 SelectedOrderCustomerName = SelectedOrder.Phone;
+                SelectedOrderCustomerTier = "Unknown";
+                SelectedOrderCustomerTierDiscount = "—";
             }
         }
     }
@@ -145,10 +155,9 @@ public partial class OrderViewModel : BaseViewModel
 
         if (!string.IsNullOrWhiteSpace(SearchText))
         {
-            if (int.TryParse(SearchText, out int searchId))
-                query = query.Where(o => o.Id == searchId);
-            else
-                query = query.Where(o => (o.Phone ?? "").Contains(SearchText, StringComparison.OrdinalIgnoreCase));
+            query = query.Where(o => 
+                o.Id.ToString().Contains(SearchText) || 
+                (o.Phone ?? "").Contains(SearchText, StringComparison.OrdinalIgnoreCase));
         }
 
         var results = query.ToList();
@@ -165,11 +174,15 @@ public partial class OrderViewModel : BaseViewModel
     [ObservableProperty] public partial Customer? SelectedCustomer { get; set; }
     [ObservableProperty] public partial string CustomerSearchText { get; set; } = string.Empty;
 
+    partial void OnSelectedCustomerChanged(Customer? value) => UpdateCartTotals();
+
     // Create new customer
     [ObservableProperty] public partial bool IsCreatingNewCustomer { get; set; }
     [ObservableProperty] public partial string NewCustomerName { get; set; } = string.Empty;
     [ObservableProperty] public partial string NewCustomerEmail { get; set; } = string.Empty;
     [ObservableProperty] public partial string NewCustomerPhone { get; set; } = string.Empty;
+    [ObservableProperty] public partial CustomerTier? SelectedNewCustomerTier { get; set; }
+    public ObservableCollection<CustomerTier> AvailableCustomerTiers { get; } = new();
 
     [ObservableProperty] public partial string? CreateFlowError { get; set; }
 
@@ -206,7 +219,8 @@ public partial class OrderViewModel : BaseViewModel
         {
             Username = NewCustomerName.Trim(),
             Email = NewCustomerEmail.Trim(),
-            Phone = NewCustomerPhone.Trim()
+            Phone = NewCustomerPhone.Trim(),
+            TierId = SelectedNewCustomerTier?.Id
         };
 
         var result = await _customerService.CreateCustomerAsync(customer);
@@ -218,6 +232,7 @@ public partial class OrderViewModel : BaseViewModel
             NewCustomerName = string.Empty;
             NewCustomerEmail = string.Empty;
             NewCustomerPhone = string.Empty;
+            SelectedNewCustomerTier = null;
         }
         else
         {
@@ -311,11 +326,13 @@ public partial class OrderViewModel : BaseViewModel
     // Computed totals
     [ObservableProperty] public partial decimal SubTotal { get; set; }
     [ObservableProperty] public partial decimal DiscountAmount { get; set; }
+    [ObservableProperty] public partial decimal TierDiscountAmount { get; set; }
     [ObservableProperty] public partial decimal TaxAmount { get; set; }
     [ObservableProperty] public partial decimal GrandTotal { get; set; }
 
     [ObservableProperty] public partial string FormattedSubTotal { get; set; } = "0 ₫";
     [ObservableProperty] public partial string FormattedDiscount { get; set; } = "0 ₫";
+    [ObservableProperty] public partial string FormattedTierDiscount { get; set; } = "0 ₫";
     [ObservableProperty] public partial string FormattedTax { get; set; } = "0 ₫";
     [ObservableProperty] public partial string FormattedShipping { get; set; } = "0 ₫";
     [ObservableProperty] public partial string FormattedGrandTotal { get; set; } = "0 ₫";
@@ -345,13 +362,21 @@ public partial class OrderViewModel : BaseViewModel
         }
         FormattedDiscount = DiscountAmount > 0 ? $"-{DiscountAmount:N0} ₫" : "0 ₫";
 
+        // Tier Discount
+        TierDiscountAmount = 0;
+        if (SelectedCustomer?.Tier?.Percent > 0)
+        {
+            TierDiscountAmount = SubTotal * (SelectedCustomer.Tier.Percent.Value / 100m);
+        }
+        FormattedTierDiscount = TierDiscountAmount > 0 ? $"-{TierDiscountAmount:N0} ₫" : "0 ₫";
+
         // Tax
-        var afterDiscount = SubTotal - DiscountAmount;
+        var afterDiscount = SubTotal - DiscountAmount - TierDiscountAmount;
         TaxAmount = 0;
         foreach (var ts in AvailableTaxes.Where(t => t.IsSelected))
         {
             if (ts.Tax.Type == "Percentage")
-                TaxAmount += afterDiscount * (ts.Tax.Value ?? 0) / 100m;
+                TaxAmount += Math.Max(0, afterDiscount) * (ts.Tax.Value ?? 0) / 100m;
             else
                 TaxAmount += ts.Tax.Value ?? 0;
         }
@@ -369,7 +394,7 @@ public partial class OrderViewModel : BaseViewModel
         FormattedShipping = IsOnlineOrder ? (shippingFee > 0 ? $"+{shippingFee:N0} ₫" : "Miễn phí") : "—";
 
         // Grand total
-        GrandTotal = afterDiscount + TaxAmount + shippingFee;
+        GrandTotal = (SubTotal - DiscountAmount - TierDiscountAmount) + TaxAmount + shippingFee;
         if (GrandTotal < 0) GrandTotal = 0;
         FormattedGrandTotal = GrandTotal.ToString("N0") + " ₫";
 
@@ -466,6 +491,15 @@ public partial class OrderViewModel : BaseViewModel
                         IsSelected = t.AutoApply == true // Auto-apply taxes
                     });
                 }
+            }
+
+            // Load tiers for new customer creation
+            var tierResult = await _customerService.GetTiersAsync();
+            AvailableCustomerTiers.Clear();
+            if (tierResult.Success && tierResult.Data != null)
+            {
+                foreach (var t in tierResult.Data) AvailableCustomerTiers.Add(t);
+                SelectedNewCustomerTier = AvailableCustomerTiers.FirstOrDefault();
             }
         }
         finally { IsLoading = false; }
@@ -572,5 +606,30 @@ public partial class OrderViewModel : BaseViewModel
             }
         }
         finally { IsLoading = false; }
+    }
+
+    [RelayCommand]
+    public async Task CycleOrderStatusAsync(Order order)
+    {
+        if (order == null) return;
+        
+        var statuses = Order.AvailableStatuses;
+        int currentIndex = Array.IndexOf(statuses, order.Status ?? "Pending");
+        if (currentIndex == -1) currentIndex = 0;
+        
+        int nextIndex = (currentIndex + 1) % statuses.Length;
+        var nextStatus = statuses[nextIndex];
+
+        var result = await _orderService.UpdateOrderStatusAsync(order.Id, nextStatus);
+        if (result.Success)
+        {
+            order.Status = nextStatus;
+            order.NotifyStatusChanged();
+            
+            if (SelectedOrder?.Id == order.Id)
+            {
+                SelectedOrder.NotifyStatusChanged();
+            }
+        }
     }
 }

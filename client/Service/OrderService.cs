@@ -35,4 +35,14 @@ public class OrderService(OrderRepository orderRepo, AuthService authService)
         }
         catch (Exception ex) { return (false, null, ex.Message); }
     }
+
+    public async Task<(bool Success, string? Error)> UpdateOrderStatusAsync(int orderId, string status)
+    {
+        try
+        {
+            var result = await _repo.UpdateStatusAsync(orderId, status);
+            return result ? (true, null) : (false, "Order not found");
+        }
+        catch (Exception ex) { return (false, ex.Message); }
+    }
 }

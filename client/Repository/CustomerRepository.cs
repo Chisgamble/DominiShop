@@ -47,9 +47,10 @@ public class CustomerRepository(PostgresContext context) // Modern primary const
         {
             return await _context.Customers
                 .AsNoTracking()
+                .Include(c => c.Tier)
                 .Where(c => c.OwnerId == ownerId
                          && c.DeletedAt == null
-                         && c.Username.Contains(name))
+                         && (c.Username.Contains(name) || c.Phone.Contains(name)))
                 .OrderBy(c => c.Username)
                 .Take(20)
                 .ToListAsync();

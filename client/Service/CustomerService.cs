@@ -16,7 +16,7 @@ public class CustomerService(CustomerRepository customerRepo, AuthService authSe
 
     public async Task<(bool Success, List<Customer>? Data, string? Error)> GetCustomersAsync()
     {
-        try { var data = await _repo.GetByOwnerIdAsync(GetOwnerId()); return (true, data, null); }
+        try { var data = await _repo.GetAllByOwnerIdAsync(GetOwnerId()); return (true, data, null); }
         catch (Exception ex) { return (false, null, ex.Message); }
     }
 
@@ -38,10 +38,16 @@ public class CustomerService(CustomerRepository customerRepo, AuthService authSe
                 return (false, null, "Email is required.");
 
             customer.OwnerId = GetOwnerId();
-            // Default password hash for "123456"
-            customer.PasswordHash = "123456";
+            
+            // Hash password before saving to db
+            using (var sha256 = System.Security.Cryptography.SHA256.Create())
+            {
+                var bytes = System.Text.Encoding.UTF8.GetBytes("123456");
+                var hash = sha256.ComputeHash(bytes);
+                customer.PasswordHash = Convert.ToBase64String(hash);
+            }
+            
             customer.TotalPoints = 0;
-
             var result = await _repo.Insert(customer);
             return (true, result, null);
         }

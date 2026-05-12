@@ -146,4 +146,12 @@ public sealed partial class OrderPage : Page
     {
         ViewModel.GoBackToStep2Command.Execute(null);
     }
+
+    private async void OnCycleStatusClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is Order order)
+        {
+            await ViewModel.CycleOrderStatusAsync(order);
+        }
+    }
 }

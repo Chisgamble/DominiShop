@@ -59,6 +59,25 @@ public class OrderRepository
                     }
                 }
 
+                // Update customer points and tier
+                if (!string.IsNullOrEmpty(order.Phone))
+                {
+                    int totalItems = order.OrderDetails.Sum(d => d.Quantity);
+                    var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Phone == order.Phone && c.OwnerId == order.OwnerId);
+                    if (customer != null && totalItems > 0)
+                    {
+                        customer.TotalPoints += totalItems * 10;
+                        
+                        var bestTier = await _context.CustomerTiers
+                            .Where(t => t.OwnerId == order.OwnerId && t.MinPoint <= customer.TotalPoints)
+                            .OrderByDescending(t => t.MinPoint)
+                            .FirstOrDefaultAsync();
+                            
+                        customer.TierId = bestTier?.Id;
+                        customer.UpdatedAt = DateTime.UtcNow;
+                    }
+                }
+
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 return order;
@@ -74,5 +93,22 @@ public class OrderRepository
                 throw new Exception($"Failed to create order: {ex.Message}");
             }
         });
+    }
+
+    public async Task<bool> UpdateStatusAsync(int orderId, string status)
+    {
+        try
+        {
+            var order = await _context.Orders.FirstOrDefaultAsync(o => o.Id == orderId);
+            if (order != null)
+            {
+                order.Status = status;
+                order.UpdatedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            return false;
+        }
+        catch { return false; }
     }
 }
