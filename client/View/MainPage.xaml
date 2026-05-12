@@ -15,43 +15,61 @@
                     IsSettingsVisible="False">
 
         <NavigationView.PaneHeader>
-            <Grid x:Name="PaneHeaderGrid" 
-              Padding="12,20,12,20"
-              HorizontalAlignment="Stretch">
-                <StackPanel Orientation="Horizontal" Spacing="12">
-                    <PersonPicture DisplayName="{x:Bind ViewModel.CurrentUserName, Mode=OneWay}" 
-                               ProfilePicture="{x:Bind ViewModel.ProfileImage, Mode=OneWay}"
-                               Width="40" Height="40"
-                               VerticalAlignment="Center"/>
+            <Grid x:Name="PaneHeaderGrid"
+                  Padding="12,20,12,20"
+                  HorizontalAlignment="Stretch">
+                <StackPanel Orientation="Horizontal"
+                        Spacing="12">
+                    <PersonPicture DisplayName="{x:Bind ViewModel.CurrentUserName, Mode=OneWay}"
+                                   ProfilePicture="{x:Bind ViewModel.ProfileImage, Mode=OneWay}"
+                                   Width="40"
+                            Height="40"
+                                   VerticalAlignment="Center"/>
 
-                    <StackPanel VerticalAlignment="Center" 
-                            Visibility="{x:Bind MainNavView.IsPaneOpen, Mode=OneWay}">
-                        <TextBlock Text="{x:Bind ViewModel.CurrentUserName, Mode=OneWay}" 
-                               Style="{StaticResource BodyStrongTextBlockStyle}"
-                               MaxLines="1" TextTrimming="CharacterEllipsis"/>
-                        <TextBlock Text="{x:Bind ViewModel.CurrentUserEmail, Mode=OneWay}" 
-                               Style="{StaticResource CaptionTextBlockStyle}"
-                               Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"
-                               MaxLines="1" TextTrimming="CharacterEllipsis"/>
+                    <StackPanel VerticalAlignment="Center"
+                                Visibility="{x:Bind MainNavView.IsPaneOpen, Mode=OneWay}">
+                        <TextBlock Text="{x:Bind ViewModel.CurrentUserName, Mode=OneWay}"
+                                   Style="{StaticResource BodyStrongTextBlockStyle}"
+                                   MaxLines="1"
+                                TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Text="{x:Bind ViewModel.CurrentUserEmail, Mode=OneWay}"
+                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"
+                                   MaxLines="1"
+                                TextTrimming="CharacterEllipsis"/>
                     </StackPanel>
                 </StackPanel>
             </Grid>
         </NavigationView.PaneHeader>
 
         <NavigationView.MenuItems>
-            <NavigationViewItem Content="Statistic" Icon="FourBars" Tag="StatisticsPage" />
-            <NavigationViewItem Content="Inventory" Icon="AllApps" Tag="InventoryPage" />
-            <NavigationViewItem Content="Category Management" Tag="CategoryPage" Icon="List" />
-            <NavigationViewItem Content="Product Management" Tag="ProductPage">
+            <NavigationViewItem Content="Statistic"
+                    Icon="FourBars"
+                    Tag="StatisticsPage"/>
+            <NavigationViewItem Content="Inventory"
+                    Icon="AllApps"
+                    Tag="InventoryPage"/>
+            <NavigationViewItem Content="Customer"
+                    Icon="Contact"
+                    Tag="CustomerPage"/>
+            <NavigationViewItem Content="Category Management"
+                    Tag="CategoryPage"
+                    Icon="List"/>
+            <NavigationViewItem Content="Product Management"
+                    Tag="ProductPage">
                 <NavigationViewItem.Icon>
                     <FontIcon Glyph="&#xE781;"/>
                 </NavigationViewItem.Icon>
             </NavigationViewItem>
-            <NavigationViewItem Content="Voucher" Icon="Tag" Tag="VoucherPage" />
-            <NavigationViewItem Content="Tax" Icon="Send" Tag="TaxPage"/>
+            <NavigationViewItem Content="Voucher"
+                    Icon="Tag"
+                    Tag="VoucherPage"/>
+            <NavigationViewItem Content="Tax"
+                    Icon="Send"
+                    Tag="TaxPage"/>
         </NavigationView.MenuItems>
 
-        <Frame x:Name="ContentFrame" />
+        <Frame x:Name="ContentFrame"/>
 
     </NavigationView>
 

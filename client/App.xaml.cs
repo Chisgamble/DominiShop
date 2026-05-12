@@ -65,7 +65,7 @@ namespace DominiShop
             .SetBasePath(AppContext.BaseDirectory)
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
             .Build();
-                
+
             var url = configuration["Supabase:Url"];
             var key = configuration["Supabase:Key"];
             var options = new SupabaseOptions { AutoConnectRealtime = true };
@@ -89,7 +89,7 @@ namespace DominiShop
             services.AddTransient<IRepo<Owner, int>, OwnerRepository>();
             services.AddSingleton<AuthService>();
             services.AddTransient<AuthViewModel>();
-            
+
             // voucher
             services.AddTransient<IRepo<Voucher, int>, VoucherRepository>();
             services.AddTransient<VoucherRepository>();
@@ -101,11 +101,16 @@ namespace DominiShop
             services.AddTransient<TaxService>();
             services.AddTransient<TaxRepository>();
 
+            //customer
+            services.AddTransient<CustomerRepository>();
+            services.AddTransient<CustomerService>();
+            services.AddTransient<CustomerViewModel>();
+
             // main
             services.AddSingleton<MainViewModel>();
 
             services.AddTransient<IRepo<Category, int>, CategoryRepository>();
-            services.AddTransient<CategoryRepository>(); 
+            services.AddTransient<CategoryRepository>();
             services.AddSingleton<CategoryService>();
             services.AddTransient<CategoryViewModel>();
 
