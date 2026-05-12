@@ -1,10 +1,14 @@
 using DominiShop.Model;
+using DominiShop.Service;
 using DominiShop.ViewModel;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Threading.Tasks;
+using Windows.Storage;
+using Windows.Storage.Pickers;
+using WinRT.Interop;
 
 namespace DominiShop.View;
 
@@ -153,5 +157,63 @@ public sealed partial class OrderPage : Page
         {
             await ViewModel.CycleOrderStatusAsync(order);
         }
+    }
+
+    private async void OnDeleteOrderClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is Order order)
+        {
+            ContentDialog confirmDialog = new ContentDialog
+            {
+                Title = "Xác nhận xóa",
+                Content = $"Bạn có chắc chắn muốn xóa đơn hàng #{order.Id} không? " +
+                          (order.Status == "Pending" ? "\n(Số lượng kho và điểm tích lũy sẽ được hoàn lại)" : ""),
+                PrimaryButtonText = "Xóa",
+                CloseButtonText = "Hủy",
+                DefaultButton = ContentDialogButton.Close,
+                XamlRoot = this.XamlRoot
+            };
+
+            if (await confirmDialog.ShowAsync() == ContentDialogResult.Primary)
+            {
+                await ViewModel.DeleteOrderCommand.ExecuteAsync(order);
+            }
+        }
+    }
+
+    private async void OnEditOrderClick(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel.SelectedOrder != null)
+        {
+            await ViewModel.StartEditOrderCommand.ExecuteAsync(ViewModel.SelectedOrder);
+            await ShowWizardAsync();
+        }
+    }
+
+    private async void OnExportOrderPdfClick(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel.SelectedOrder == null) return;
+
+        var picker = new FileSavePicker
+        {
+            SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
+            SuggestedFileName = $"Order-{ViewModel.SelectedOrder.Id}.pdf"
+        };
+        picker.FileTypeChoices.Add("PDF file", new[] { ".pdf" });
+
+        var window = App.MainWindow;
+        if (window != null)
+            InitializeWithWindow.Initialize(picker, WindowNative.GetWindowHandle(window));
+
+        StorageFile file = await picker.PickSaveFileAsync();
+        if (file == null) return;
+
+        var bytes = OrderPdfExportService.CreateOrderPdf(
+            ViewModel.SelectedOrder,
+            ViewModel.SelectedOrderCustomerName,
+            ViewModel.SelectedOrderCustomerTier,
+            ViewModel.SelectedOrderCustomerTierDiscount);
+
+        await FileIO.WriteBytesAsync(file, bytes);
     }
 }

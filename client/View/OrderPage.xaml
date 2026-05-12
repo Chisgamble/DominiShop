@@ -18,7 +18,7 @@
 
     <Grid Padding="20">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="3*"/>
+            <ColumnDefinition Width="3.5*"/>
             <ColumnDefinition Width="2*"/>
         </Grid.ColumnDefinitions>
 
@@ -30,21 +30,30 @@
             </Grid.RowDefinitions>
 
             <Grid Grid.Row="0" Margin="0,0,0,16">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="Order Management" FontSize="24" FontWeight="Bold" VerticalAlignment="Center"/>
-                <AutoSuggestBox Grid.Column="1" PlaceholderText="Search by ID or phone..." QueryIcon="Find" Height="36"
-                                VerticalAlignment="Center" Margin="20,0"
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Order Management" FontSize="24" FontWeight="Bold" VerticalAlignment="Center"/>
+                <AutoSuggestBox Grid.Row="0" Grid.Column="1" PlaceholderText="Search ID/Phone..." QueryIcon="Find" Height="36" Margin="20,0"
                                 Text="{x:Bind ViewModel.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                <Button Grid.Column="2" Style="{StaticResource AccentButtonStyle}" Height="36" Padding="12,0" Click="OnAddOrderClick">
+                <Button Grid.Row="0" Grid.Column="2" Style="{StaticResource AccentButtonStyle}" Height="36" Padding="12,0" Click="OnAddOrderClick">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon Glyph="&#xE710;" FontSize="14"/>
                         <TextBlock Text="Add Order"/>
                     </StackPanel>
                 </Button>
+
+                <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Spacing="12" Margin="20,8,0,0">
+                    <CalendarDatePicker PlaceholderText="Min Date" Date="{x:Bind ViewModel.MinDate, Mode=TwoWay}" Width="150"/>
+                    <CalendarDatePicker PlaceholderText="Max Date" Date="{x:Bind ViewModel.MaxDate, Mode=TwoWay}" Width="150"/>
+                </StackPanel>
             </Grid>
 
             <controls:DataGrid Grid.Row="1"
@@ -76,6 +85,16 @@
                             </DataTemplate>
                         </controls:DataGridTemplateColumn.CellTemplate>
                     </controls:DataGridTemplateColumn>
+
+                    <controls:DataGridTemplateColumn Width="50">
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="model:Order">
+                                <Button Content="&#xE74D;" FontFamily="Segoe MDL2 Assets" 
+                                        Background="Transparent" BorderThickness="0" Foreground="Red"
+                                        Click="OnDeleteOrderClick" Tag="{x:Bind}"/>
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                    </controls:DataGridTemplateColumn>
                 </controls:DataGrid.Columns>
             </controls:DataGrid>
         </Grid>
@@ -98,10 +117,28 @@
         <ScrollViewer Padding="20"
                       Visibility="{x:Bind ViewModel.SelectedOrder, Mode=OneWay, Converter={StaticResource NullToVis}}">
             <StackPanel Spacing="16">
-                <!-- Order ID -->
-                <TextBlock Text="{x:Bind ViewModel.SelectedOrder.Id, Mode=OneWay, FallbackValue=''}"
-                           FontSize="28" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{ThemeResource SystemAccentColor}"/>
-                <TextBlock Text="Order ID" FontSize="12" Foreground="Gray" HorizontalAlignment="Center" Margin="0,-10,0,0"/>
+                <!-- Order ID & Actions -->
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                        <TextBlock Text="{x:Bind ViewModel.SelectedOrder.Id, Mode=OneWay, FallbackValue=''}"
+                                   FontSize="28" FontWeight="Bold" Foreground="{ThemeResource SystemAccentColor}"/>
+                        <TextBlock Text="Order ID" FontSize="12" Foreground="Gray" HorizontalAlignment="Center" Margin="0,-10,0,0"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
+                        <Button Content="&#xE159;" FontFamily="Segoe MDL2 Assets"
+                                FontSize="16" Width="40" Height="40" CornerRadius="20"
+                                ToolTipService.ToolTip="Export PDF"
+                                Click="OnExportOrderPdfClick"/>
+                        <Button Content="&#xE70F;" FontFamily="Segoe MDL2 Assets" 
+                                FontSize="16" Width="40" Height="40" CornerRadius="20"
+                                ToolTipService.ToolTip="Edit Order"
+                                Click="OnEditOrderClick"/>
+                    </StackPanel>
+                </Grid>
 
                 <!-- Key-Value Info -->
                 <Grid ColumnSpacing="8" RowSpacing="10">
@@ -218,7 +255,7 @@
         </Grid>
 
         <!-- ============ STEP 1 DIALOG: CUSTOMER ============ -->
-        <ContentDialog x:Name="Step1Dialog" Title="Step 1: Select Customer"
+        <ContentDialog x:Name="Step1Dialog" Title="{x:Bind ViewModel.WizardTitle, Mode=OneWay}"
                        PrimaryButtonText="Next" CloseButtonText="Cancel"
                        DefaultButton="Primary" PrimaryButtonClick="OnStep1Next">
             <StackPanel Spacing="12" Width="400">
@@ -267,7 +304,7 @@
         </ContentDialog>
 
         <!-- ============ STEP 2 DIALOG: PRODUCTS ============ -->
-        <ContentDialog x:Name="Step2Dialog" Title="Step 2: Select Items"
+        <ContentDialog x:Name="Step2Dialog" Title="{x:Bind ViewModel.WizardTitle, Mode=OneWay}"
                        PrimaryButtonText="Next" SecondaryButtonText="Back" CloseButtonText="Cancel"
                        DefaultButton="Primary" PrimaryButtonClick="OnStep2Next" SecondaryButtonClick="OnStep2Back">
             <Grid Width="500" Height="500">
@@ -348,8 +385,8 @@
         </ContentDialog>
 
         <!-- ============ STEP 3 DIALOG: VOUCHER, TAX, SHIPPING ============ -->
-        <ContentDialog x:Name="Step3Dialog" Title="Step 3: Voucher, Tax &amp; Shipping"
-                       PrimaryButtonText="Create Order" SecondaryButtonText="Back" CloseButtonText="Cancel"
+        <ContentDialog x:Name="Step3Dialog" Title="{x:Bind ViewModel.WizardTitle, Mode=OneWay}"
+                       PrimaryButtonText="{x:Bind ViewModel.SubmitButtonText, Mode=OneWay}" SecondaryButtonText="Back" CloseButtonText="Cancel"
                        DefaultButton="Primary" PrimaryButtonClick="OnSubmitOrder" SecondaryButtonClick="OnStep3Back">
             <ScrollViewer VerticalScrollBarVisibility="Auto" Width="450" MaxHeight="550">
                 <StackPanel Spacing="14">

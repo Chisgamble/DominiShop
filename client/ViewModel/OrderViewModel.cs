@@ -76,8 +76,12 @@ public partial class OrderViewModel : BaseViewModel
     public ObservableCollection<Order> FilteredOrders { get; } = new();
 
     [ObservableProperty] public partial Order? SelectedOrder { get; set; }
+    [ObservableProperty] public partial DateTimeOffset? MinDate { get; set; }
+    [ObservableProperty] public partial DateTimeOffset? MaxDate { get; set; }
 
     partial void OnSearchTextChanged(string value) => FilterOrders();
+    partial void OnMinDateChanged(DateTimeOffset? value) => FilterOrders();
+    partial void OnMaxDateChanged(DateTimeOffset? value) => FilterOrders();
     partial void OnSelectedOrderChanged(Order? value) => LoadSelectedOrderCustomerName();
 
     // Selected order detail — customer name loaded via Phone lookup
@@ -95,32 +99,30 @@ public partial class OrderViewModel : BaseViewModel
             return;
         }
 
-        // Try to find customer name from already-loaded customer list
-        var customer = _cachedCustomers.FirstOrDefault(c => c.Phone == SelectedOrder.Phone);
+        // Try to find customer including deleted ones
+        var customer = _cachedCustomers.FirstOrDefault(c => c.Phone == SelectedOrder.Phone) 
+                       ?? await _customerService.GetCustomerByPhoneAsync(SelectedOrder.Phone, true);
+
         if (customer != null)
         {
-            SelectedOrderCustomerName = customer.Username;
-            SelectedOrderCustomerTier = customer.Tier?.Name ?? "Normal";
-            SelectedOrderCustomerTierDiscount = customer.Tier != null ? $"-{customer.Tier.Percent}%" : "0%";
-        }
-        else
-        {
-            // Lazy load customers if not yet loaded
-            var result = await _customerService.GetCustomersAsync();
-            if (result.Success && result.Data != null)
+            if (customer.DeletedAt != null)
             {
-                _cachedCustomers = result.Data;
-                var found = result.Data.FirstOrDefault(c => c.Phone == SelectedOrder.Phone);
-                SelectedOrderCustomerName = found?.Username ?? SelectedOrder.Phone;
-                SelectedOrderCustomerTier = found?.Tier?.Name ?? "Normal";
-                SelectedOrderCustomerTierDiscount = found?.Tier != null ? $"-{found.Tier.Percent}%" : "0%";
+                SelectedOrderCustomerName = "CUSTOMER IS DELETED";
+                SelectedOrderCustomerTier = "—";
+                SelectedOrderCustomerTierDiscount = "—";
             }
             else
             {
-                SelectedOrderCustomerName = SelectedOrder.Phone;
-                SelectedOrderCustomerTier = "Unknown";
-                SelectedOrderCustomerTierDiscount = "—";
+                SelectedOrderCustomerName = customer.Username;
+                SelectedOrderCustomerTier = customer.Tier?.Name ?? "Normal";
+                SelectedOrderCustomerTierDiscount = customer.Tier != null ? $"-{customer.Tier.Percent}%" : "0%";
             }
+        }
+        else
+        {
+            SelectedOrderCustomerName = SelectedOrder.Phone;
+            SelectedOrderCustomerTier = "Unknown";
+            SelectedOrderCustomerTierDiscount = "—";
         }
     }
 
@@ -159,6 +161,17 @@ public partial class OrderViewModel : BaseViewModel
                 o.Id.ToString().Contains(SearchText) || 
                 (o.Phone ?? "").Contains(SearchText, StringComparison.OrdinalIgnoreCase));
         }
+ 
+        if (MinDate.HasValue)
+        {
+            var min = MinDate.Value.Date;
+            query = query.Where(o => o.OrderAt.Date >= min);
+        }
+        if (MaxDate.HasValue)
+        {
+            var max = MaxDate.Value.Date;
+            query = query.Where(o => o.OrderAt.Date <= max);
+        }
 
         var results = query.ToList();
         FilteredOrders.Clear();
@@ -183,6 +196,13 @@ public partial class OrderViewModel : BaseViewModel
     [ObservableProperty] public partial string NewCustomerPhone { get; set; } = string.Empty;
     [ObservableProperty] public partial CustomerTier? SelectedNewCustomerTier { get; set; }
     public ObservableCollection<CustomerTier> AvailableCustomerTiers { get; } = new();
+
+    [ObservableProperty] public partial bool IsEditingOrder { get; set; }
+    [ObservableProperty] public partial int? EditingOrderId { get; set; }
+    [ObservableProperty] public partial string WizardTitle { get; set; } = "Create Order";
+
+    public string SubmitButtonText => IsEditingOrder ? "Update Order" : "Create Order";
+    partial void OnIsEditingOrderChanged(bool value) => OnPropertyChanged(nameof(SubmitButtonText));
 
     [ObservableProperty] public partial string? CreateFlowError { get; set; }
 
@@ -209,6 +229,69 @@ public partial class OrderViewModel : BaseViewModel
     {
         IsCreatingNewCustomer = !IsCreatingNewCustomer;
         if (IsCreatingNewCustomer) SelectedCustomer = null;
+    }
+
+    [RelayCommand]
+    private async Task DeleteOrderAsync(Order order)
+    {
+        if (order == null) return;
+        IsLoading = true;
+        try
+        {
+            var result = await _orderService.DeleteOrderAsync(order.Id);
+            if (result.Success) await LoadDataAsync();
+            else CreateFlowError = result.Error;
+        }
+        finally { IsLoading = false; }
+    }
+
+    [RelayCommand]
+    private async Task StartEditOrderAsync(Order order)
+    {
+        if (order == null) return;
+        await InitializeCreateFlowAsync();
+        
+        IsEditingOrder = true;
+        EditingOrderId = order.Id;
+        WizardTitle = $"Edit Order #{order.Id}";
+
+        // Populate customer
+        SelectedCustomer = _cachedCustomers.FirstOrDefault(c => c.Phone == order.Phone)
+                          ?? await _customerService.GetCustomerByPhoneAsync(order.Phone);
+        
+        // Populate products
+        foreach (var detail in order.OrderDetails)
+        {
+            var product = _allProducts.FirstOrDefault(p => p.Id == detail.ProductId);
+            if (product != null)
+            {
+                product.CartQuantity = detail.Quantity;
+                CartItems.Add(new CartItem { Product = product, Quantity = detail.Quantity });
+            }
+        }
+
+        // Populate voucher
+        if (order.OrderVouchers.Any())
+        {
+            var vId = order.OrderVouchers.First().VoucherId;
+            SelectedVoucher = AvailableVouchers.FirstOrDefault(v => v.Id == vId);
+        }
+
+        // Populate taxes
+        foreach (var taxSel in AvailableTaxes)
+        {
+            taxSel.IsSelected = order.OrderTaxes.Any(ot => ot.TaxId == taxSel.Tax.Id);
+        }
+
+        // Populate shipping
+        if (order.Address != null)
+        {
+            IsOnlineOrder = true;
+            ShippingAddress = order.Address;
+            ShippingFeeInput = (double)(order.ShippingFee ?? 0);
+        }
+
+        UpdateCartTotals();
     }
 
     [RelayCommand]
@@ -411,6 +494,9 @@ public partial class OrderViewModel : BaseViewModel
     [RelayCommand]
     private async Task InitializeCreateFlowAsync()
     {
+        IsEditingOrder = false;
+        EditingOrderId = null;
+        WizardTitle = "Create Order";
         CreateFlowError = null;
         CurrentStep = 1;
         SelectedCustomer = null;
@@ -593,10 +679,25 @@ public partial class OrderViewModel : BaseViewModel
         IsLoading = true;
         try
         {
-            var result = await _orderService.CreateOrderAsync(order);
+            (bool Success, Order? Data, string? Error) result;
+            if (IsEditingOrder && EditingOrderId.HasValue)
+            {
+                order.Id = EditingOrderId.Value;
+                result = await _orderService.UpdateOrderAsync(order);
+            }
+            else
+            {
+                result = await _orderService.CreateOrderAsync(order);
+            }
+
             if (result.Success)
             {
+                int savedId = result.Data?.Id ?? (IsEditingOrder ? EditingOrderId ?? 0 : 0);
                 await LoadDataAsync();
+                if (savedId > 0)
+                {
+                    SelectedOrder = FilteredOrders.FirstOrDefault(o => o.Id == savedId);
+                }
                 return true;
             }
             else

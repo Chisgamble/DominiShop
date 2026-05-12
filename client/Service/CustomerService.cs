@@ -26,6 +26,12 @@ public class CustomerService(CustomerRepository customerRepo, AuthService authSe
         catch (Exception ex) { return (false, null, ex.Message); }
     }
 
+    public async Task<Customer?> GetCustomerByPhoneAsync(string phone, bool includeDeleted = false)
+    {
+        try { return await _repo.GetByPhoneAsync(phone, GetOwnerId(), includeDeleted); }
+        catch { return null; }
+    }
+
     public async Task<(bool Success, Customer? Data, string? Error)> CreateCustomerAsync(Customer customer)
     {
         try

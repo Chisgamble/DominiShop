@@ -39,6 +39,7 @@ namespace DominiShop
     public partial class App : Application
     {
         private static Window? _window;
+        public static Window? MainWindow => _window;
         public static IServiceProvider Services { get; private set; } = null!;
 
         /// <summary>

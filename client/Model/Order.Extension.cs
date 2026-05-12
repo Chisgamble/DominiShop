@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
 
 namespace DominiShop.Model;
 
@@ -40,7 +41,7 @@ public partial class Order : BaseModel
     }
 
     [NotMapped]
-    public int ItemCount => OrderDetails?.Count ?? 0;
+    public int ItemCount => OrderDetails?.Sum(d => d.Quantity) ?? 0;
 
     [NotMapped]
     public string FormattedShippingFee => ShippingFee.HasValue && ShippingFee > 0
