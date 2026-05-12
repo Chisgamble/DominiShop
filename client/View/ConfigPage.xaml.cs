@@ -1,4 +1,3 @@
-using DominiShop.Service;
 using DominiShop.ViewModel;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
@@ -7,11 +6,9 @@ using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -26,24 +23,24 @@ namespace DominiShop.View
     /// <summary>
     /// An empty page that can be used on its own or navigated to within a Frame.
     /// </summary>
-    public sealed partial class MainPage : Page
+    public sealed partial class ConfigPage : Page
     {
-        public MainViewModel ViewModel { get; } = App.Services.GetRequiredService<MainViewModel>();
-
-        public MainPage()
+        public ConfigViewModel ViewModel { get; } = App.Services.GetRequiredService<ConfigViewModel>();
+        public ConfigPage()
         {
             InitializeComponent();
-
-            var navService = (NavigationService)App.Services.GetRequiredService<INavigationService>();
-            navService.Frame = this.ContentFrame;
-
-            navService.NavigateTo(typeof(DashboardPage));
+            DbConnBox.Password = ViewModel.DbConn ?? string.Empty;
         }
 
-        private void MainNavView_ItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
+        private void DbConnBox_PasswordChanged(object sender, RoutedEventArgs e)
         {
-            ViewModel.ItemInvokedCommand.Execute(args);
+            ViewModel.DbConn = ((PasswordBox)sender).Password;
+            ViewModel.ShowRestartMessage = false;
         }
 
+        private void Back_Click(object sender, RoutedEventArgs e)
+        {
+            if (this.Frame.CanGoBack) this.Frame.GoBack();
+        }
     }
 }

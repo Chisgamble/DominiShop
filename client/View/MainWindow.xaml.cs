@@ -1,3 +1,5 @@
+using DominiShop.Service;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -40,6 +42,9 @@ namespace DominiShop.View
 
                 CenterWindow(appWindow);
             }
+
+            var navService = (NavigationService)App.Services.GetRequiredService<INavigationService>();
+            navService.Frame = this.RootFrame;
 
             RootFrame.Navigate(typeof(AuthPage));
         }

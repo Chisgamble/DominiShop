@@ -152,6 +152,17 @@
                         </StackPanel>
                     </HyperlinkButton>
 
+                    <StackPanel Margin="0,20,0,0">
+                        <TextBlock Text="{x:Bind ViewModel.AppVersion, Mode=OneWay}" 
+                       HorizontalAlignment="Center" 
+                       Style="{StaticResource CaptionTextBlockStyle}"
+                       Foreground="Gray"/>
+
+                        <HyperlinkButton Content="Server Configuration" 
+                     HorizontalAlignment="Center"
+                     Command="{x:Bind ViewModel.GoToConfigCommand}"/>
+                    </StackPanel>
+
                 </StackPanel>
             </Border>
         </ScrollViewer>

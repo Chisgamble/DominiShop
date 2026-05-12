@@ -23,6 +23,7 @@
     <None Remove="appsettings.json" />
     <None Remove="Assets\logo.jpg" />
     <None Remove="View\CategoryPage.xaml" />
+    <None Remove="View\ConfigPage.xaml" />
     <None Remove="View\InventoryPage.xaml" />
     <None Remove="View\ProductPage.xaml" />
     <None Remove="View\SettingPage.xaml" />
