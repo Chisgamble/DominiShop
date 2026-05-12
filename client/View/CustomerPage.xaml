@@ -171,16 +171,14 @@
                                                  Width="*"/>
 
                     <!-- Actions -->
-                    <controls:DataGridTemplateColumn Header=""
-                                                     Width="80">
+                    <controls:DataGridTemplateColumn Header="" Width="80">
                         <controls:DataGridTemplateColumn.CellTemplate>
                             <DataTemplate x:DataType="model:Customer">
-                                <Button Style="{ThemeResource SubtleDangerButtonStyle}"
+                                <Button Background="Transparent"
                                         ToolTipService.ToolTip="Xoá"
                                         Padding="8,4"
                                         Click="OnDeleteCustomerRowClick">
-                                    <FontIcon Glyph="&#xE74D;"
-                                              FontSize="14"/>
+                                    <FontIcon Glyph="&#xE74D;" FontSize="14" Foreground="Red"/>
                                 </Button>
                             </DataTemplate>
                         </controls:DataGridTemplateColumn.CellTemplate>
@@ -311,12 +309,11 @@
 
                                     <!-- Delete button -->
                                     <Button Grid.Column="4"
-                                            Style="{ThemeResource SubtleDangerButtonStyle}"
+                                            Background="Transparent"
                                             VerticalAlignment="Center"
                                             Padding="10,6"
                                             Click="OnDeleteTierClick">
-                                        <FontIcon Glyph="&#xE74D;"
-                                                  FontSize="13"/>
+                                        <FontIcon Glyph="&#xE74D;" FontSize="13" Foreground="Red"/>
                                     </Button>
                                 </Grid>
                             </Border>
