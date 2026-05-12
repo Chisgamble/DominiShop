@@ -22,5 +22,9 @@ public partial class Tax
 
     public string? Type { get; set; }
 
+    public bool? AutoApply { get; set; }
+
+    public virtual ICollection<OrderTax> OrderTaxes { get; set; } = new List<OrderTax>();
+
     public virtual Owner? Owner { get; set; }
 }
