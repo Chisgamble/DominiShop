@@ -82,6 +82,9 @@ namespace DominiShop.View
                 case "DashboardPage":
                     navService.NavigateTo(typeof(DashboardPage));
                     break;
+                case "ReportPage": 
+                    navService.NavigateTo(typeof(ReportPage));
+                    break;
                 case "CustomerPage":
                     navService.NavigateTo(typeof(CustomerPage));
                     break;
