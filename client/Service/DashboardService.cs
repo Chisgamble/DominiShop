@@ -47,5 +47,8 @@ namespace DominiShop.Service
 
         public Task<List<DailyRevenue>> GetDailyRevenueAsync(int ownerId, int days = 30)
             => UseRepositoryAsync(repo => repo.GetDailyRevenueAsync(ownerId, days));
+
+        public Task<(Product Product, decimal TodayRevenue)?> GetTopProductWithTodayRevenueAsync(int ownerId)
+            => UseRepositoryAsync(repo => repo.GetTopProductWithTodayRevenueAsync(ownerId));
     }
 }

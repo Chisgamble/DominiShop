@@ -59,6 +59,10 @@ namespace DominiShop.View
             TodayOrdersText.Text   = _vm.TodayOrderCount.ToString("N0");
             TodayRevenueText.Text  = FormatCurrency(_vm.TodayRevenue);
 
+            // ── Top product highlight
+            TopProductNameText.Text = _vm.TopProductName;
+            TopProductRevenueText.Text = FormatCurrency(_vm.TopProductTodayRevenue);
+
             // ── Low stock list
             LowStockListView.ItemsSource = _vm.LowStockProducts;
             LowStockEmptyText.Visibility = _vm.LowStockProducts.Count == 0

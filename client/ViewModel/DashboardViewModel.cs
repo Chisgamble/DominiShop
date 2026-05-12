@@ -40,6 +40,20 @@ namespace DominiShop.ViewModel
             set { _todayRevenue = value; OnPropertyChanged(); }
         }
 
+        private string _topProductName = "—";
+        public string TopProductName
+        {
+            get => _topProductName;
+            set { _topProductName = value; OnPropertyChanged(); }
+        }
+
+        private decimal _topProductTodayRevenue;
+        public decimal TopProductTodayRevenue
+        {
+            get => _topProductTodayRevenue;
+            set { _topProductTodayRevenue = value; OnPropertyChanged(); }
+        }
+
         // Lists
         public ObservableCollection<Product> LowStockProducts { get; } = new();
         public ObservableCollection<Product> BestSellingProducts { get; } = new();
@@ -90,6 +104,7 @@ namespace DominiShop.ViewModel
                 var todayOrderCountTask = _service.GetTodayOrderCountAsync(ownerId.Value);
                 var todayRevenueTask = _service.GetTodayRevenueAsync(ownerId.Value);
                 var dailyRevenueTask = _service.GetDailyRevenueAsync(ownerId.Value, days: 30);
+                var topProductTask = _service.GetTopProductWithTodayRevenueAsync(ownerId.Value);
 
                 await Task.WhenAll(
                     totalProductsTask,
@@ -97,11 +112,16 @@ namespace DominiShop.ViewModel
                     bestSellingTask,
                     todayOrderCountTask,
                     todayRevenueTask,
-                    dailyRevenueTask);
+                    dailyRevenueTask,
+                    topProductTask);
 
                 TotalProducts = totalProductsTask.Result;
                 TodayOrderCount = todayOrderCountTask.Result;
                 TodayRevenue = todayRevenueTask.Result;
+
+                var topResult = topProductTask.Result;
+                TopProductName = topResult?.Product.Name ?? "—";
+                TopProductTodayRevenue = topResult?.TodayRevenue ?? 0;
 
                 LowStockProducts.Clear();
                 foreach (var p in lowStockTask.Result)

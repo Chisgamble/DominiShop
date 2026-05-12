@@ -85,6 +85,28 @@ namespace DominiShop.Repository
 
             return result;
         }
+
+        // Returns the #1 best-selling product (by all-time Sold) and the total revenue that product generated today.
+        // Returns null if there are no products.
+        public async Task<(Product Product, decimal TodayRevenue)?> GetTopProductWithTodayRevenueAsync(int ownerId)
+        {
+            var top = await _context.Products
+                .Where(p => p.OwnerId == ownerId && p.IsDeleted != true)
+                .OrderByDescending(p => p.Sold)
+                .FirstOrDefaultAsync();
+
+            if (top == null) return null;
+
+            var today = DateTime.UtcNow.Date;
+
+            var todayRevenue = await _context.OrderDetails
+                .Where(od => od.ProductId == top.Id
+                          && od.Order.OwnerId == ownerId
+                          && od.Order.OrderAt.Date == today)
+                .SumAsync(od => (decimal?)(od.Price * od.Quantity) ?? 0);
+
+            return (top, todayRevenue);
+        }
     }
 
     public class DailyRevenue

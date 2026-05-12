@@ -5,8 +5,6 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:model="using:DominiShop.Model"
-    xmlns:repo="using:DominiShop.Repository"
-    xmlns:controls="using:DominiShop.View.Controls"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
@@ -162,17 +160,89 @@
                 </Border>
             </Grid>
 
-            <!-- ── Revenue line chart ────────────────────────────────────── -->
-            <Border Style="{StaticResource StatCardStyle}">
-                <StackPanel>
-                    <TextBlock Text="Daily Revenue (Last 30 Days)"
-                               Style="{StaticResource SectionTitleStyle}"/>
-                    <!-- Custom line chart canvas -->
-                    <Canvas x:Name="RevenueChartCanvas"
-                            Height="200"
-                            HorizontalAlignment="Stretch"/>
-                </StackPanel>
-            </Border>
+            <!-- ── Top Product + Revenue line chart (side by side) ─────────── -->
+            <Grid ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="220"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Best Selling Product Highlight card -->
+                <Border Grid.Column="0" Style="{StaticResource StatCardStyle}">
+                    <StackPanel Spacing="12">
+
+                        <!-- Header -->
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Border Background="#1AFF9800" CornerRadius="8" Padding="8">
+                                <FontIcon Glyph="&#xE734;" FontSize="16" Foreground="#FF9800"/>
+                            </Border>
+                            <TextBlock Text="Best Selling"
+                           Style="{StaticResource SectionTitleStyle}"
+                           VerticalAlignment="Center"
+                           Margin="0"/>
+                        </StackPanel>
+
+                        <!-- Divider -->
+                        <Rectangle Height="1"
+                       Fill="{ThemeResource CardStrokeColorDefaultBrush}"
+                       Opacity="0.5"/>
+
+                        <!-- Product name -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="TOP PRODUCT"
+                           FontSize="10"
+                           FontWeight="SemiBold"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           CharacterSpacing="80"/>
+                            <TextBlock x:Name="TopProductNameText"
+                           Text="—"
+                           FontSize="18"
+                           FontWeight="Bold"
+                           TextWrapping="Wrap"/>
+                        </StackPanel>
+
+                        <!-- Today's revenue for that product -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="TODAY'S REVENUE"
+                           FontSize="10"
+                           FontWeight="SemiBold"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           CharacterSpacing="80"/>
+                            <TextBlock x:Name="TopProductRevenueText"
+                           Text="—"
+                           FontSize="26"
+                           FontWeight="Bold"
+                           Foreground="#FF9800"/>
+                        </StackPanel>
+
+                        <!-- Decorative bar -->
+                        <Border Background="#1AFF9800"
+                    CornerRadius="6"
+                    Padding="10,8">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <FontIcon Glyph="&#xE8C7;" FontSize="12" Foreground="#FF9800"/>
+                                <TextBlock Text="All-time best seller"
+                               FontSize="11"
+                               Foreground="#FF9800"
+                               VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+
+                    </StackPanel>
+                </Border>
+
+                <!-- Revenue line chart -->
+                <Border Grid.Column="1" Style="{StaticResource StatCardStyle}">
+                    <StackPanel>
+                        <TextBlock Text="Daily Revenue (Last 30 Days)"
+                       Style="{StaticResource SectionTitleStyle}"/>
+                        <Canvas x:Name="RevenueChartCanvas"
+                    Height="200"
+                    HorizontalAlignment="Stretch"/>
+                    </StackPanel>
+                </Border>
+
+            </Grid>
 
             <!-- ── Low stock + Best selling (side by side) ──────────────── -->
             <Grid ColumnSpacing="16">
