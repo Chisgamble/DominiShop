@@ -93,7 +93,7 @@
                     </controls:DataGridTemplateColumn.CellTemplate>
                 </controls:DataGridTemplateColumn>
 
-                <controls:DataGridTemplateColumn Header="Value" Width="1.2*">
+                <controls:DataGridTemplateColumn Header="Value" Width="0.8*">
                     <controls:DataGridTemplateColumn.CellTemplate>
                         <DataTemplate x:DataType="model:Tax">
                             <TextBlock Text="{Binding Converter={StaticResource TaxValueConverter}}"
@@ -105,7 +105,7 @@
                     </controls:DataGridTemplateColumn.CellTemplate>
                 </controls:DataGridTemplateColumn>
 
-                <controls:DataGridTemplateColumn Header="Auto Apply" Width="130">
+                <controls:DataGridTemplateColumn Header="Auto Apply" Width="170">
                     <controls:DataGridTemplateColumn.CellTemplate>
                         <DataTemplate x:DataType="model:Tax">
                             <ToggleSwitch IsOn="{x:Bind IsAutoApply, Mode=OneWay}"
