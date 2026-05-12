@@ -1,14 +1,20 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DominiShop.Service;
+using DominiShop.View;
 using System;
 using System.Threading.Tasks;
+using Windows.ApplicationModel;
 
 namespace DominiShop.ViewModel;
 
-public partial class AuthViewModel(AuthService authService) : BaseViewModel
+public partial class AuthViewModel : BaseViewModel
 {
-    private readonly AuthService _auth = authService;
+    private readonly AuthService _auth;
+    private readonly ConfigService _config;
+    private readonly INavigationService _nav;
+
+    [ObservableProperty] public partial string AppVersion { get; set; }
 
     //State
     [ObservableProperty] public partial bool IsLoading { get; set; }
@@ -26,9 +32,33 @@ public partial class AuthViewModel(AuthService authService) : BaseViewModel
     [ObservableProperty] public partial string SignUpPassword { get; set; } = string.Empty;
     [ObservableProperty] public partial string SignUpConfirmPassword { get; set; } = string.Empty;
 
+    public AuthViewModel(AuthService auth, ConfigService config, INavigationService nav)
+    {
+        _auth = auth;
+        _config = config;
+        _nav = nav;
+
+        var v = Package.Current.Id.Version;
+        AppVersion = $"v{v.Major}.{v.Minor}.{v.Build}";
+
+        _ = CheckAutoLogin();
+    }
+
+    private async Task CheckAutoLogin()
+    {
+        if (_config.HasAutoLogin)
+        {
+            var (email, password) = await _config.GetCredentials();
+            LoginEmail = email;
+            LoginPassword = password;
+            await LoginAsync();
+        }
+    }
+
     public bool IsSignUpMode => !IsLoginMode;
     public bool HasError => !string.IsNullOrEmpty(ErrorMessage);
     public bool HasSuccess => !string.IsNullOrEmpty(SuccessMessage);
+
 
     partial void OnIsLoginModeChanged(bool value)
     {
@@ -59,14 +89,22 @@ public partial class AuthViewModel(AuthService authService) : BaseViewModel
         await RunAsync(async () =>
         {
             var (ok, err) = await _auth.LoginAsync(LoginEmail, LoginPassword);
+            if (err != null)
+            {
+                HandleAuthError(err);
+            }
             if (!ok)
             {
-                SetError("Error : Cannot login. Please try again later.");
                 return;
             }
+
+            await _config.SaveCredentials(LoginEmail, LoginPassword);
             App.NavigateToMain();
         });
     }
+
+    [RelayCommand]
+    private void GoToConfig() => _nav.NavigateTo(typeof(ConfigPage));
 
     [RelayCommand]
     private async Task SignUpAsync()
@@ -88,8 +126,15 @@ public partial class AuthViewModel(AuthService authService) : BaseViewModel
         await RunAsync(async () =>
         {
             var (ok, err) = await _auth.SignUpAsync(SignUpUsername, SignUpEmail, SignUpPassword);
-            if (!ok) { SetError("Error : Cannot login. Please try again later."); return; }
-
+            if (err != null)
+            {
+                HandleAuthError(err);
+            }
+            if (!ok)
+            {
+                return;
+            }
+            
             IsLoginMode = true;
             LoginEmail = SignUpEmail;
             SuccessMessage = "Account created! You can now sign in.";
@@ -115,5 +160,44 @@ public partial class AuthViewModel(AuthService authService) : BaseViewModel
     {
         ErrorMessage = null;
         SuccessMessage = null;
+    }
+
+    private void HandleAuthError(object err)
+    {
+        var errorMessage = "Unidentified error!";
+        var errorStr = err?.ToString() ?? "";
+
+        //lỗi mạng (Thường là HttpRequestException)
+        if (errorStr.Contains("HttpRequestException") || errorStr.Contains("network") || errorStr.Contains("Failed to fetch"))
+        {
+            errorMessage = "Couldn't connect to the server. Please check your internet connection.";
+        }
+        //lỗi cấu hình (Sai URL, Key hoặc Database connection)
+        else if (errorStr.Contains("UriFormatException") || errorStr.Contains("404") || errorStr.Contains("433") || errorStr.Contains("Invalid API key"))
+        {
+            errorMessage = "Incorrect server configuration. Please check the settings in Server Configuration.";
+        }
+        //lỗi sai tài khoản/mật khẩu
+        else if (errorStr.Contains("Invalid login credentials") || errorStr.Contains("400") || errorStr.Contains("invalid_credentials"))
+        {
+            errorMessage = "Email or password is incorrect.";
+        }
+        //lỗi Email đã tồn tại (Dành cho SignUp)
+        else if (errorStr.Contains("User already registered") || errorStr.Contains("already exists"))
+        {
+            errorMessage = "This Email has been attached to another account.";
+        }
+        //mật khẩu quá yếu
+        else if (errorStr.Contains("Password should be"))
+        {
+            errorMessage = "The password should be stronger.";
+        }
+        else
+        {
+            // Nếu không rơi vào các trường hợp trên, hiện thông báo gốc nhưng rút gọn
+            errorMessage = $"Lỗi: {errorStr.Split('\n')[0]}";
+        }
+
+        SetError(errorMessage);
     }
 }
