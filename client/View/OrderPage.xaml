@@ -18,8 +18,8 @@
 
     <Grid Padding="20">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="3.5*"/>
-            <ColumnDefinition Width="2*"/>
+            <ColumnDefinition Width="3.75*"/>
+            <ColumnDefinition Width="1.75*"/>
         </Grid.ColumnDefinitions>
 
         <!-- ============ MASTER PANEL (LEFT) ============ -->
@@ -78,7 +78,7 @@
                             </DataTemplate>
                         </controls:DataGridTemplateColumn.CellTemplate>
                     </controls:DataGridTemplateColumn>
-                    <controls:DataGridTextColumn Header="Items" Binding="{Binding ItemCount}" Width="60"/>
+                    <controls:DataGridTextColumn Header="Items" Binding="{Binding ItemCount}" Width="100"/>
                     <controls:DataGridTemplateColumn Header="Total" Width="*">
                         <controls:DataGridTemplateColumn.CellTemplate>
                             <DataTemplate x:DataType="model:Order">
@@ -87,7 +87,7 @@
                         </controls:DataGridTemplateColumn.CellTemplate>
                     </controls:DataGridTemplateColumn>
 
-                    <controls:DataGridTemplateColumn Width="50">
+                    <controls:DataGridTemplateColumn Width="70">
                         <controls:DataGridTemplateColumn.CellTemplate>
                             <DataTemplate x:DataType="model:Order">
                                 <Button Content="&#xE74D;" FontFamily="Segoe MDL2 Assets" 
