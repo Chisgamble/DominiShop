@@ -10,9 +10,10 @@ using System.Threading.Tasks;
 
 namespace DominiShop.ViewModel
 {
-    public partial class CustomerViewModel(CustomerService customerService) : BaseViewModel
+    public partial class CustomerViewModel(CustomerService customerService, SettingService settingService) : BaseViewModel
     {
         private readonly CustomerService _service = customerService;
+        private readonly SettingService _settingService = settingService;
 
         private List<Customer> _masterCustomers = new();
         private List<CustomerTier> _masterTiers = new();
@@ -20,6 +21,18 @@ namespace DominiShop.ViewModel
         [ObservableProperty] public partial bool IsLoading { get; set; }
         [ObservableProperty] public partial bool IsEditMode { get; set; }
         [ObservableProperty] public partial bool IsTierTab { get; set; } = false;
+
+        [ObservableProperty] public partial int CurrentPage { get; set; } = 1;
+        [ObservableProperty] public partial int TotalPages { get; set; } = 1;
+        [ObservableProperty] public partial int PageSize { get; set; }
+
+        public List<int> PageSizeOptions { get; } = new() { 5, 10, 15, 20 };
+        public bool CanGoPrevious => CurrentPage > 1;
+        public bool CanGoNext => CurrentPage < TotalPages;
+        public string PagingInfo => $"Page {CurrentPage} of {TotalPages}";
+
+        // Biến lưu kết quả sau khi lọc (để cắt trang)
+        private List<Customer> _currentFilteredList = new();
 
         public ObservableCollection<Customer> FilteredCustomers { get; } = new();
         public ObservableCollection<CustomerTier> FilteredTiers { get; } = new();
@@ -75,6 +88,13 @@ namespace DominiShop.ViewModel
         public async Task LoadDataAsync()
         {
             IsLoading = true;
+
+            int savedPageSize = _settingService.GetCustomerPageSize();
+            if (PageSize != savedPageSize)
+            {
+                PageSize = savedPageSize;
+            }
+
             try
             {
                 var (csOk, customers, csErr) = await _service.GetCustomersAsync();
@@ -144,8 +164,10 @@ namespace DominiShop.ViewModel
                 _ => q.OrderByDescending(c => c.CreatedAt)
             };
 
-            FilteredCustomers.Clear();
-            foreach (var c in q) FilteredCustomers.Add(c);
+            // THAY VÌ GÁN TRỰC TIẾP, TA LƯU VÀO BIẾN TẠM VÀ GỌI CẮT TRANG
+            _currentFilteredList = q.ToList();
+            CurrentPage = 1;
+            ApplyPaging();
         }
 
         [RelayCommand]
@@ -250,5 +272,34 @@ namespace DominiShop.ViewModel
             var (ok, err) = await _service.DeleteTierAsync(tier.Id);
             if (ok) await LoadDataAsync();
         }
+
+        private void ApplyPaging()
+        {
+            TotalPages = (int)Math.Ceiling(_currentFilteredList.Count / (double)PageSize);
+            if (TotalPages == 0) TotalPages = 1;
+
+            var pagedData = _currentFilteredList
+                .Skip((CurrentPage - 1) * PageSize)
+                .Take(PageSize)
+                .ToList();
+
+            FilteredCustomers.Clear();
+            foreach (var item in pagedData) FilteredCustomers.Add(item);
+
+            OnPropertyChanged(nameof(CanGoPrevious));
+            OnPropertyChanged(nameof(CanGoNext));
+            OnPropertyChanged(nameof(PagingInfo));
+        }
+
+        partial void OnPageSizeChanged(int value)
+        {
+            if (value > 0) _settingService.SaveCustomerPageSize(value);
+            CurrentPage = 1;
+            ApplyPaging();
+        }
+
+        [RelayCommand] private void NextPage() { if (CanGoNext) { CurrentPage++; ApplyPaging(); } }
+        [RelayCommand] private void PreviousPage() { if (CanGoPrevious) { CurrentPage--; ApplyPaging(); } }
+
     }
 }

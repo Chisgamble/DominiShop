@@ -38,7 +38,7 @@ namespace DominiShop
     /// </summary>
     public partial class App : Application
     {
-        private static Window? _window;
+        public static Window MainWindow { get; private set; }
         public static IServiceProvider Services { get; private set; } = null!;
 
         /// <summary>
@@ -127,6 +127,10 @@ namespace DominiShop
             services.AddTransient<OrderService>();
             services.AddTransient<OrderViewModel>();
 
+            // setting
+            services.AddSingleton<SettingService>();
+            services.AddTransient<SettingsViewModel>();
+
             return services.BuildServiceProvider();
         }
 
@@ -136,15 +140,17 @@ namespace DominiShop
         /// <param name="args">Details about the launch request and process.</param>
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
-            _window = new MainWindow();
-            _window.Activate();
+            MainWindow = new MainWindow(); 
+            MainWindow.Activate();         
         }
 
         public static void NavigateToMain()
         {
-            if (_window is MainWindow mw)
+            if (MainWindow is MainWindow mw)
+            {
                 mw.Navigate(typeof(MainPage));
-            else if (_window?.Content is Frame rootFrame)
+            }
+            else if (MainWindow?.Content is Frame rootFrame)
             {
                 rootFrame.Navigate(typeof(MainPage));
             }

@@ -16,6 +16,7 @@ public partial class CartItem : ObservableObject
     [ObservableProperty] public partial Product Product { get; set; }
     [ObservableProperty] public partial int Quantity { get; set; }
 
+
     public decimal SubTotal => Product.Price * Quantity;
     public string FormattedSubTotal => SubTotal.ToString("N0") + " ₫";
     public string ProductName => Product.Name;
@@ -49,8 +50,18 @@ public partial class OrderViewModel : BaseViewModel
     private readonly CategoryService _categoryService;
     private readonly VoucherService _voucherService;
     private readonly TaxService _taxService;
+    private readonly SettingService _settingService;
 
     private List<Order> _masterOrders = new();
+    private List<Order> _currentFilteredList = new();
+
+    [ObservableProperty] public partial int CurrentPage { get; set; } = 1;
+    [ObservableProperty] public partial int TotalPages { get; set; } = 1;
+    [ObservableProperty] public partial int PageSize { get; set; }
+    public List<int> PageSizeOptions { get; } = new() { 5, 10, 15, 20 };
+    public bool CanGoPrevious => CurrentPage > 1;
+    public bool CanGoNext => CurrentPage < TotalPages;
+    public string PagingInfo => $"Page {CurrentPage} of {TotalPages}";
 
     public OrderViewModel(
         OrderService orderService,
@@ -58,7 +69,8 @@ public partial class OrderViewModel : BaseViewModel
         ProductService productService,
         CategoryService categoryService,
         VoucherService voucherService,
-        TaxService taxService)
+        TaxService taxService,
+        SettingService settingService)
     {
         _orderService = orderService;
         _customerService = customerService;
@@ -66,6 +78,7 @@ public partial class OrderViewModel : BaseViewModel
         _categoryService = categoryService;
         _voucherService = voucherService;
         _taxService = taxService;
+        _settingService = settingService;
     }
 
     // ============ MASTER LIST STATE ============
