@@ -43,14 +43,10 @@
         </NavigationView.PaneHeader>
 
         <NavigationView.MenuItems>
-            <NavigationViewItem Content="Report"
-                                Icon="FourBars"
-                                Tag="ReportPage"/>
-            <NavigationViewItem Content="Inventory"
-                                Icon="AllApps"
-                                Tag="InventoryPage"/>
-            <NavigationView.MenuItems>
             <NavigationViewItem Content="Dashboard" Icon="Home" Tag="DashboardPage"/>
+            <NavigationViewItem Content="Report"
+                    Icon="FourBars"
+                    Tag="ReportPage"/>
             <NavigationViewItem Content="Customer"
                                 Icon="Contact"
                                 Tag="CustomerPage"/>
