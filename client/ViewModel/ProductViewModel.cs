@@ -41,11 +41,15 @@ public partial class ProductViewModel(ProductService productService, CategorySer
     [ObservableProperty] public partial Product EditingProduct { get; set; } = new();
 
     // Bridging variables for UI Input
+    [ObservableProperty] public partial int? EditingCategoryId { get; set; }
+
     [ObservableProperty] public partial double EditingBasePrice { get; set; }
     [ObservableProperty] public partial double EditingSellPrice { get; set; }
     [ObservableProperty] public partial double EditingInStock { get; set; }
     [ObservableProperty] public partial double EditingSold { get; set; }
     [ObservableProperty] public partial double EditingTotalQuantity { get; set; }
+
+    [ObservableProperty] public partial Category QuickAddCategory { get; set; } = new();
 
     [RelayCommand]
     public async Task LoadDataAsync()
@@ -117,6 +121,9 @@ public partial class ProductViewModel(ProductService productService, CategorySer
         EditingInStock = 0;
         EditingSold = 0;
         EditingTotalQuantity = 0;
+
+        EditingCategoryId = AvailableCategories.FirstOrDefault()?.Id;
+
         IsEditMode = true;
         SelectedProduct = null;
     }
@@ -143,6 +150,8 @@ public partial class ProductViewModel(ProductService productService, CategorySer
         EditingSold = product.Sold;
         EditingTotalQuantity = EditingInStock + EditingSold;
 
+        EditingCategoryId = product.CategoryId;
+
         IsEditMode = true;
     }
 
@@ -154,6 +163,8 @@ public partial class ProductViewModel(ProductService productService, CategorySer
         EditingProduct.Price = (decimal)EditingSellPrice;
         EditingProduct.Quantity = (int)EditingInStock;
         EditingProduct.Sold = (int)EditingSold;
+
+        EditingProduct.CategoryId = EditingCategoryId ?? 0;
 
         bool isSuccess = EditingProduct.Id == 0
             ? (await _productService.CreateProductAsync(EditingProduct)).Success
@@ -178,5 +189,27 @@ public partial class ProductViewModel(ProductService productService, CategorySer
             await LoadDataAsync();
         }
         IsLoading = false;
+    }
+
+
+    [RelayCommand]
+    public async Task<(bool Success, string Error)> SaveQuickCategoryAsync()
+    {
+        IsLoading = true;
+        var res = await _categoryService.CreateCategoryAsync(QuickAddCategory);
+
+        if (res.Success && res.Data != null)
+        {
+            AvailableCategories.Add(res.Data);
+            FilterCategories.Add(res.Data);
+
+            EditingCategoryId = res.Data.Id;
+
+            IsLoading = false;
+            return (true, string.Empty);
+        }
+
+        IsLoading = false;
+        return (false, res.Error ?? "Category creation error");
     }
 }

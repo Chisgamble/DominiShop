@@ -25,16 +25,16 @@ namespace DominiShop.ViewModel
         public ObservableCollection<CustomerTier> FilteredTiers { get; } = new();
 
         [ObservableProperty] public partial string SearchText { get; set; } = string.Empty;
-        [ObservableProperty] public partial string SelectedSortOption { get; set; } = "Mới nhất";
-        [ObservableProperty] public partial string SelectedTierFilter { get; set; } = "Tất cả";
+        [ObservableProperty] public partial string SelectedSortOption { get; set; } = "Newest";
+        [ObservableProperty] public partial string SelectedTierFilter { get; set; } = "All";
 
         public List<string> SortOptions { get; } = new()
         {
-            "Mới nhất", "Cũ nhất", "Tên (A-Z)", "Tên (Z-A)",
-            "Điểm (Cao-Thấp)", "Điểm (Thấp-Cao)"
+            "Newest", "Oldest", "Name (A-Z)", "Name (Z-A)",
+            "Points (High-Low)", "Points (Low-High)"
         };
 
-        public ObservableCollection<string> TierFilterOptions { get; } = new() { "Tất cả" };
+        public ObservableCollection<string> TierFilterOptions { get; } = new() { "All" };
 
         partial void OnSearchTextChanged(string value) => FilterData();
         partial void OnSelectedSortOptionChanged(string value) => FilterData();
@@ -89,13 +89,15 @@ namespace DominiShop.ViewModel
                 _masterCustomers = customers;
 
                 // Rebuild tier filter options
+                var currentFilter = SelectedTierFilter;
                 TierFilterOptions.Clear();
-                TierFilterOptions.Add("Tất cả");
+                TierFilterOptions.Add("All");
                 foreach (var t in _masterTiers) TierFilterOptions.Add(t.Name);
+                SelectedTierFilter = string.IsNullOrEmpty(currentFilter) || !TierFilterOptions.Contains(currentFilter) ? "All" : currentFilter;
 
                 // Rebuild TierList for ComboBox (with a "no tier" sentinel)
                 TierList.Clear();
-                TierList.Add(new CustomerTier { Id = -1, Name = "(Không có hạng)" });
+                TierList.Add(new CustomerTier { Id = -1, Name = "(No tier)" });
                 foreach (var t in _masterTiers) TierList.Add(t);
 
                 RebuildTiers();
@@ -124,7 +126,7 @@ namespace DominiShop.ViewModel
             }
 
             // Tier filter
-            if (SelectedTierFilter != "Tất cả")
+            if (SelectedTierFilter != "All")
             {
                 var tier = _masterTiers.FirstOrDefault(t => t.Name == SelectedTierFilter);
                 if (tier != null)
@@ -136,11 +138,11 @@ namespace DominiShop.ViewModel
             // Sort
             q = SelectedSortOption switch
             {
-                "Cũ nhất" => q.OrderBy(c => c.CreatedAt),
-                "Tên (A-Z)" => q.OrderBy(c => c.Username),
-                "Tên (Z-A)" => q.OrderByDescending(c => c.Username),
-                "Điểm (Cao-Thấp)" => q.OrderByDescending(c => c.TotalPoints),
-                "Điểm (Thấp-Cao)" => q.OrderBy(c => c.TotalPoints),
+                "Oldest" => q.OrderBy(c => c.CreatedAt),
+                "Name (A-Z)" => q.OrderBy(c => c.Username),
+                "Name (Z-A)" => q.OrderByDescending(c => c.Username),
+                "Points (High-Low)" => q.OrderByDescending(c => c.TotalPoints),
+                "Points (Low-High)" => q.OrderBy(c => c.TotalPoints),
                 _ => q.OrderByDescending(c => c.CreatedAt)
             };
 

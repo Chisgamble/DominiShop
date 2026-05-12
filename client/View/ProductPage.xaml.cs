@@ -67,7 +67,9 @@ public sealed partial class ProductPage : Page
         List<string> errors = new();
 
         if (string.IsNullOrWhiteSpace(ViewModel.EditingProduct.Name)) errors.Add("• Product Name is required.");
-        if (ViewModel.EditingProduct.CategoryId == null || ViewModel.EditingProduct.CategoryId == 0) errors.Add("• Please select a Category.");
+
+        if (ViewModel.EditingCategoryId == null || ViewModel.EditingCategoryId == 0) errors.Add("• Please select a Category.");
+
         if (ViewModel.EditingBasePrice < 0 || ViewModel.EditingSellPrice < 0) errors.Add("• Prices cannot be negative.");
 
         double currentSum = ViewModel.EditingInStock + ViewModel.EditingSold;
@@ -103,6 +105,48 @@ public sealed partial class ProductPage : Page
                 XamlRoot = this.XamlRoot
             };
             await success.ShowAsync();
+        }
+    }
+
+    private async void OnQuickAddCategoryClick(object sender, RoutedEventArgs e)
+    {
+        EditDialog.Hide();
+
+        ViewModel.QuickAddCategory = new Category();
+        QuickCategoryError.IsOpen = false;
+        QuickAddCategoryDialog.XamlRoot = this.XamlRoot;
+
+        await QuickAddCategoryDialog.ShowAsync();
+
+        await EditDialog.ShowAsync();
+    }
+
+    private async void OnQuickAddCategorySaveClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    {
+        QuickCategoryError.IsOpen = false;
+
+        if (string.IsNullOrWhiteSpace(ViewModel.QuickAddCategory.Name))
+        {
+            args.Cancel = true; 
+            QuickCategoryError.Message = "Category Name is required."; 
+            QuickCategoryError.IsOpen = true;
+            return;
+        }
+
+        var deferral = args.GetDeferral(); 
+        try
+        {
+            var (success, error) = await ViewModel.SaveQuickCategoryAsync();
+            if (!success)
+            {
+                args.Cancel = true; 
+                QuickCategoryError.Message = $"Failed to create category: {error}";
+                QuickCategoryError.IsOpen = true;
+            }
+        }
+        finally
+        {
+            deferral.Complete();
         }
     }
 }

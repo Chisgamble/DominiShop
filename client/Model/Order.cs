@@ -25,7 +25,7 @@ public partial class Order
 
     public int? OwnerId { get; set; }
 
-    public string? Phone { get; set; }
+    public string Phone { get; set; } = null!;
 
     public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
 
