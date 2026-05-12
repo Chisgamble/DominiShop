@@ -358,7 +358,7 @@
                         <TextBlock Text="{x:Bind ViewModel.SelectedCustomer.Username, Mode=OneWay}"
                                    FontSize="20"
                                    FontWeight="Bold"/>
-                        <TextBlock Text="{x:Bind ViewModel.SelectedCustomer.Tier.Name, Mode=OneWay}"
+                        <TextBlock Text="{x:Bind ViewModel.SelectedCustomer.Tier.Name, Mode=OneWay, FallbackValue='(Không có hạng)'}"
                                    FontSize="13"
                                    Foreground="{ThemeResource SystemAccentColor}"
                                    FontWeight="SemiBold"/>

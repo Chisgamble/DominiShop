@@ -106,7 +106,7 @@ public sealed partial class CustomerPage : Page
         {
             args.Cancel = true;
             CustomerErrorBanner.Message = string.Join("\n", errors);
-            CustomerErrorBanner.IsOpen  = true;
+            CustomerErrorBanner.IsOpen = true;
             return;
         }
 
@@ -131,11 +131,11 @@ public sealed partial class CustomerPage : Page
     {
         var confirm = new ContentDialog
         {
-            Title             = "Xác nhận xoá",
-            Content           = $"Bạn có chắc muốn xoá khách hàng '{customer.Username}' ({customer.Phone})?\nHành động này không thể hoàn tác.",
+            Title = "Xác nhận xoá",
+            Content = $"Bạn có chắc muốn xoá khách hàng '{customer.Username}' ({customer.Phone})?\nHành động này không thể hoàn tác.",
             PrimaryButtonText = "Xoá",
-            CloseButtonText   = "Huỷ",
-            XamlRoot          = this.XamlRoot
+            CloseButtonText = "Huỷ",
+            XamlRoot = this.XamlRoot
         };
 
         if (await confirm.ShowAsync() == ContentDialogResult.Primary)
@@ -186,7 +186,7 @@ public sealed partial class CustomerPage : Page
         {
             args.Cancel = true;
             TierErrorBanner.Message = string.Join("\n", errors);
-            TierErrorBanner.IsOpen  = true;
+            TierErrorBanner.IsOpen = true;
             return;
         }
 
@@ -203,11 +203,11 @@ public sealed partial class CustomerPage : Page
 
         var confirm = new ContentDialog
         {
-            Title             = "Xác nhận xoá hạng",
-            Content           = $"Xoá hạng '{tier.Name}'? Khách hàng thuộc hạng này sẽ không còn hạng nữa.",
+            Title = "Xác nhận xoá hạng",
+            Content = $"Xoá hạng '{tier.Name}'? Khách hàng thuộc hạng này sẽ không còn hạng nữa.",
             PrimaryButtonText = "Xoá",
-            CloseButtonText   = "Huỷ",
-            XamlRoot          = this.XamlRoot
+            CloseButtonText = "Huỷ",
+            XamlRoot = this.XamlRoot
         };
 
         if (await confirm.ShowAsync() == ContentDialogResult.Primary)

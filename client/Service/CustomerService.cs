@@ -16,7 +16,7 @@ public class CustomerService(CustomerRepository customerRepo, AuthService authSe
 
     public async Task<(bool Success, List<Customer>? Data, string? Error)> GetCustomersAsync()
     {
-        try { var data = await _repo.GetByOwnerIdAsync(GetOwnerId()); return (true, data, null); }
+        try { var data = await _repo.GetAllByOwnerIdAsync(GetOwnerId()); return (true, data, null); }
         catch (Exception ex) { return (false, null, ex.Message); }
     }
 
