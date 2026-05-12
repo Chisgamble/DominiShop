@@ -121,9 +121,23 @@
 
                     <TextBox Header="Product Name" Text="{x:Bind ViewModel.EditingProduct.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
-                    <ComboBox Header="Category (Required)" ItemsSource="{x:Bind ViewModel.AvailableCategories}" 
-                              SelectedValue="{x:Bind ViewModel.EditingProduct.CategoryId, Mode=TwoWay}" 
-                              SelectedValuePath="Id" DisplayMemberPath="Name" HorizontalAlignment="Stretch"/>
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Category (Required)" />
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <ComboBox Grid.Column="0" ItemsSource="{x:Bind ViewModel.AvailableCategories}" 
+                                      SelectedValue="{x:Bind ViewModel.EditingCategoryId, Mode=TwoWay}" 
+                                      SelectedValuePath="Id" DisplayMemberPath="Name" HorizontalAlignment="Stretch" PlaceholderText="Select a category"/>
+
+                            <Button Grid.Column="1" Click="OnQuickAddCategoryClick" Height="32" Width="36" ToolTipService.ToolTip="Create new category">
+                                <FontIcon Glyph="&#xE710;" FontSize="14"/>
+                            </Button>
+                        </Grid>
+                    </StackPanel>
 
                     <Grid ColumnSpacing="15">
                         <Grid.ColumnDefinitions>
@@ -150,6 +164,20 @@
 
                 </StackPanel>
             </ScrollViewer>
+        </ContentDialog>
+        <ContentDialog x:Name="QuickAddCategoryDialog" Title="Quick Add Category"
+                       PrimaryButtonText="Save Category" CloseButtonText="Cancel" DefaultButton="Primary"
+                       PrimaryButtonClick="OnQuickAddCategorySaveClick">
+            <StackPanel Spacing="15" Margin="0,10,0,0" Width="350">
+                <InfoBar x:Name="QuickCategoryError" IsOpen="False" Severity="Error" IsClosable="False" Margin="0,0,0,5"/>
+
+                <TextBox Header="Category Name *" PlaceholderText="e.g. Nước ngọt"
+                         Text="{x:Bind ViewModel.QuickAddCategory.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+
+                <TextBox Header="Note (Optional)" 
+                         Text="{x:Bind ViewModel.QuickAddCategory.Note, Mode=TwoWay}" 
+                         Height="60" TextWrapping="Wrap" AcceptsReturn="True"/>
+            </StackPanel>
         </ContentDialog>
     </Grid>
 </Page>
