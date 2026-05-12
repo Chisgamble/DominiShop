@@ -8,7 +8,7 @@ public partial class SettingsViewModel : BaseViewModel
 {
     private readonly SettingService _settingService;
 
-    public List<int> PageSizeOptions { get; } = new() { 5, 10, 15, 20, 50 };
+    public List<int> PageSizeOptions { get; } = new() { 5, 10, 15, 20};
 
     [ObservableProperty] private int _productPageSize;
     [ObservableProperty] private int _categoryPageSize;

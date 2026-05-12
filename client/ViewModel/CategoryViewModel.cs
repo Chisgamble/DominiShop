@@ -25,7 +25,7 @@ public partial class CategoryViewModel(CategoryService categoryService, SettingS
 
     [ObservableProperty] public partial int CurrentPage { get; set; } = 1;
     [ObservableProperty] public partial int TotalPages { get; set; } = 1;
-    [ObservableProperty] public partial int PageSize { get; set; }
+    [ObservableProperty] public partial int PageSize { get; set; } = settingService.GetCategoryPageSize();
 
     public List<int> PageSizeOptions { get; } = new() { 5, 10, 15, 20 };
     public bool CanGoPrevious => CurrentPage > 1;
@@ -69,6 +69,8 @@ public partial class CategoryViewModel(CategoryService categoryService, SettingS
         {
             PageSize = savedPageSize;
         }
+
+        OnPropertyChanged(nameof(PageSize));
 
         try
         {

@@ -24,7 +24,7 @@ namespace DominiShop.ViewModel
 
         [ObservableProperty] public partial int CurrentPage { get; set; } = 1;
         [ObservableProperty] public partial int TotalPages { get; set; } = 1;
-        [ObservableProperty] public partial int PageSize { get; set; }
+        [ObservableProperty] public partial int PageSize { get; set; } = settingService.GetCustomerPageSize();
 
         public List<int> PageSizeOptions { get; } = new() { 5, 10, 15, 20 };
         public bool CanGoPrevious => CurrentPage > 1;
@@ -94,6 +94,8 @@ namespace DominiShop.ViewModel
             {
                 PageSize = savedPageSize;
             }
+
+            OnPropertyChanged(nameof(PageSize));
 
             try
             {

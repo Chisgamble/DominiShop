@@ -117,7 +117,6 @@
                 Grid.Row="1"
                 ItemsSource="{x:Bind ViewModel.FilteredCustomers, Mode=OneWay}"
                 SelectedItem="{x:Bind ViewModel.SelectedCustomer, Mode=TwoWay}"
-                SelectionChanged="OnCustomerRowSelected"
                 AutoGenerateColumns="False"
                 GridLinesVisibility="Horizontal"
                 IsReadOnly="True"
