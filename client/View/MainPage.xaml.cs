@@ -37,7 +37,13 @@ namespace DominiShop.View
             var navService = (NavigationService)App.Services.GetRequiredService<INavigationService>();
             navService.Frame = this.ContentFrame;
 
-            navService.NavigateTo(typeof(StatisticsPage));
+            NavigateToReport();
+        }
+
+        private void NavigateToReport()
+        {
+            var navService = (NavigationService)App.Services.GetRequiredService<INavigationService>();
+            navService.NavigateTo(typeof(ReportPage));
         }
 
         private void MainNavView_ItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)

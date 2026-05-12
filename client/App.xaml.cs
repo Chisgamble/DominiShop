@@ -1,4 +1,4 @@
-﻿using DominiShop.DataAccess;
+using DominiShop.DataAccess;
 using DominiShop.Model;
 using DominiShop.Repository;
 using DominiShop.Service;
@@ -122,6 +122,9 @@ namespace DominiShop
             services.AddTransient<OrderRepository>();
             services.AddTransient<OrderService>();
             services.AddTransient<OrderViewModel>();
+
+            // report
+            services.AddTransient<ReportViewModel>();
 
             return services.BuildServiceProvider();
         }

@@ -43,9 +43,9 @@
         </NavigationView.PaneHeader>
 
         <NavigationView.MenuItems>
-            <NavigationViewItem Content="Statistic"
+            <NavigationViewItem Content="Report"
                                 Icon="FourBars"
-                                Tag="StatisticsPage"/>
+                                Tag="ReportPage"/>
             <NavigationViewItem Content="Inventory"
                                 Icon="AllApps"
                                 Tag="InventoryPage"/>
