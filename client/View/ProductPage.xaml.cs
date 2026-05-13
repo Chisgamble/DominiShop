@@ -8,6 +8,14 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using WinRT.Interop;
 using Windows.Storage.Pickers;
+
+using Windows.Graphics.Imaging;
+using Windows.Storage.Streams;
+using Windows.Storage;
+using System;
+using System.IO;
+using System.Threading.Tasks;
+
 using WinRT.Interop;
 
 namespace DominiShop.View;
@@ -206,6 +214,41 @@ public sealed partial class ProductPage : Page
                 XamlRoot = this.XamlRoot
             };
             await resultDialog.ShowAsync();
+        }
+    }
+
+    private async void OnPickImagesClick(object sender, RoutedEventArgs e)
+    {
+        var picker = new Windows.Storage.Pickers.FileOpenPicker();
+        var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+
+        picker.ViewMode = Windows.Storage.Pickers.PickerViewMode.Thumbnail;
+        picker.FileTypeFilter.Add(".jpg");
+        picker.FileTypeFilter.Add(".png");
+        picker.FileTypeFilter.Add(".jpeg");
+
+        var files = await picker.PickMultipleFilesAsync();
+        if (files.Count > 0)
+        {
+            var paths = new List<string>();
+            var localFolder = Windows.Storage.ApplicationData.Current.LocalFolder;
+
+            foreach (var file in files)
+            {
+                var copiedFile = await file.CopyAsync(localFolder, file.Name, Windows.Storage.NameCollisionOption.GenerateUniqueName);
+                paths.Add(copiedFile.Path);
+            }
+            await ViewModel.PickImagesAsync(paths);
+        }
+    }
+
+    private void OnRemoveImageClick(object sender, RoutedEventArgs e)
+    {
+        var btn = sender as Button;
+        if (btn?.DataContext is string url)
+        {
+            ViewModel.RemoveImage(url);
         }
     }
 }

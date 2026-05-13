@@ -32,6 +32,8 @@ public partial class PostgresContext : DbContext
 
     public virtual DbSet<Product> Products { get; set; }
 
+    public virtual DbSet<ProductImage> ProductImages { get; set; }
+
     public virtual DbSet<Tax> Taxes { get; set; }
 
     public virtual DbSet<Voucher> Vouchers { get; set; }
@@ -317,6 +319,25 @@ public partial class PostgresContext : DbContext
                 .HasForeignKey(d => d.OwnerId)
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("food_owner_id_fkey");
+        });
+
+        modelBuilder.Entity<ProductImage>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("product_image_pkey");
+
+            entity.ToTable("product_image");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnName("created_at");
+            entity.Property(e => e.ImageUrl).HasColumnName("image_url");
+            entity.Property(e => e.IsPrimary).HasColumnName("is_primary");
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
+
+            entity.HasOne(d => d.Product).WithMany(p => p.ProductImages)
+                .HasForeignKey(d => d.ProductId)
+                .HasConstraintName("product_image_product_id_fkey");
         });
 
         modelBuilder.Entity<Tax>(entity =>
