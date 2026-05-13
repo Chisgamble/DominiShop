@@ -15,9 +15,7 @@ public class SettingService
     private const string KEY_PAGE_SIZE_TAX = "PageSize_Tax";
     private const string KEY_PAGE_SIZE_VOUCHER = "PageSize_Voucher";
 
-    // _settings[KEY_LAST_PAGE]?.ToString() ??
-
-    public string GetLastVisitedPage() =>  "DashboardPage";
+    public string GetLastVisitedPage() => _settings[KEY_LAST_PAGE]?.ToString() ?? "DashboardPage";
     public void SaveLastVisitedPage(string tag) => _settings[KEY_LAST_PAGE] = tag;
 
     public int GetProductPageSize() => (int)(_settings[KEY_PAGE_SIZE_PRODUCT] ?? 10);
