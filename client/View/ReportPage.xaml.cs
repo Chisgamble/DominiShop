@@ -23,7 +23,53 @@ namespace DominiShop.View
         private async void ReportPage_Loaded(object sender, RoutedEventArgs e)
         {
             await ViewModel.InitializeAsync();
+            ViewModel.ChatMessages.CollectionChanged += ChatMessages_CollectionChanged;
+            ViewModel.PropertyChanged += ViewModel_PropertyChanged;
         }
+
+        private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(ViewModel.IsChatVisible) && ViewModel.IsChatVisible)
+            {
+                ScrollChatToBottom();
+            }
+        }
+
+        private void ChatMessages_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        {
+            ScrollChatToBottom();
+        }
+
+        private void ScrollChatToBottom()
+        {
+            if (ViewModel.ChatMessages.Count > 0)
+            {
+                // Delay slightly to allow the UI to update the items before scrolling
+                _ = DispatcherQueue.TryEnqueue(() =>
+                {
+                    ChatListView.ScrollIntoView(ViewModel.ChatMessages.Last());
+                });
+            }
+        }
+
+        private async void ClearChat_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new ContentDialog
+            {
+                Title = "Clear Chat History",
+                Content = "Are you sure you want to delete all chat messages? This cannot be undone.",
+                PrimaryButtonText = "Clear",
+                CloseButtonText = "Cancel",
+                XamlRoot = this.XamlRoot
+            };
+
+            var result = await dialog.ShowAsync();
+            if (result == ContentDialogResult.Primary)
+            {
+                ViewModel.ClearChat();
+            }
+        }
+
 
 
 
@@ -56,27 +102,34 @@ namespace DominiShop.View
             }
         }
 
-        private async void AnalyzeWithAI_Click(object sender, RoutedEventArgs e)
+        private async void ExportData_Click(object sender, RoutedEventArgs e)
         {
-            if (ViewModel.ChatMessages.Count > 0)
+            string folder = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DominiShop");
+            System.IO.Directory.CreateDirectory(folder);
+            string approvalFilePath = System.IO.Path.Combine(folder, "ai_approval.txt");
+            bool hasApproved = System.IO.File.Exists(approvalFilePath);
+
+            if (!hasApproved)
             {
-                ViewModel.StartChat();
-                return;
+                var dialog = new ContentDialog
+                {
+                    Title = "AI Analysis Approval",
+                    Content = "This feature will export the current report data (sales, revenue, profit) and send it to our AI service for analysis. Do you approve?",
+                    PrimaryButtonText = "Approve & Analyze",
+                    CloseButtonText = "Cancel",
+                    XamlRoot = this.XamlRoot
+                };
+
+                var result = await dialog.ShowAsync();
+                if (result == ContentDialogResult.Primary)
+                {
+                    System.IO.File.WriteAllText(approvalFilePath, "true");
+                    await ViewModel.StartChatAsync();
+                }
             }
-
-            var dialog = new ContentDialog
+            else
             {
-                Title = "AI Analysis Approval",
-                Content = "This feature will export the current report data (sales, revenue, profit) and send it to our AI service for analysis. Do you approve?",
-                PrimaryButtonText = "Approve & Analyze",
-                CloseButtonText = "Cancel",
-                XamlRoot = this.XamlRoot
-            };
-
-            var result = await dialog.ShowAsync();
-            if (result == ContentDialogResult.Primary)
-            {
-                ViewModel.StartChat();
+                await ViewModel.StartChatAsync();
             }
         }
 

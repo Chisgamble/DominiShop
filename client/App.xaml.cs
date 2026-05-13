@@ -82,6 +82,10 @@ namespace DominiShop
 
             services.AddSingleton(provider => new Supabase.Client(url!, key, options));
 
+            services.AddSingleton<IConfiguration>(configuration);
+            services.AddHttpClient();
+            services.AddTransient<AIService>();
+
             // navigation
             services.AddSingleton<INavigationService, NavigationService>();
 

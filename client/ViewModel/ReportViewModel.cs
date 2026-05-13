@@ -19,9 +19,14 @@ namespace DominiShop.ViewModel
     {
         private readonly ProductService _productService;
         private readonly OrderService _orderService;
+        private readonly CategoryService _categoryService;
+        private readonly AIService _aiService;
 
         private List<Order> _allOrders = new();
         private List<Product> _allProducts = new();
+        private List<Category> _allCategories = new();
+        private string _systemPromptContext = string.Empty;
+        private readonly string _chatHistoryPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DominiShop", "chat_history.json");
 
         [ObservableProperty]
         public partial ObservableCollection<string> TimeFilters { get; set; }
@@ -68,10 +73,18 @@ namespace DominiShop.ViewModel
         [ObservableProperty]
         public partial string CurrentChatInput { get; set; } = string.Empty;
 
-        public ReportViewModel(ProductService productService, OrderService orderService)
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(IsTypingVisibility))]
+        public partial bool IsTyping { get; set; }
+
+        public Microsoft.UI.Xaml.Visibility IsTypingVisibility => IsTyping ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
+
+        public ReportViewModel(ProductService productService, OrderService orderService, CategoryService categoryService, AIService aiService)
         {
             _productService = productService;
             _orderService = orderService;
+            _categoryService = categoryService;
+            _aiService = aiService;
 
             TimeFilters = new ObservableCollection<string>
             {
@@ -87,8 +100,9 @@ namespace DominiShop.ViewModel
         {
             var pTask = _productService.GetProductsAsync();
             var oTask = _orderService.GetOrdersAsync();
+            var cTask = _categoryService.GetCategoriesAsync();
 
-            await Task.WhenAll(pTask, oTask);
+            await Task.WhenAll(pTask, oTask, cTask);
 
             var pRes = await pTask;
             if (pRes.Success && pRes.Data != null)
@@ -103,7 +117,45 @@ namespace DominiShop.ViewModel
                 _allOrders = oRes.Data;
             }
 
+            var cRes = await cTask;
+            if (cRes.Success && cRes.Data != null)
+            {
+                _allCategories = cRes.Data;
+            }
+
+            LoadChatHistory();
             GenerateCharts();
+        }
+
+        private void LoadChatHistory()
+        {
+            try
+            {
+                if (System.IO.File.Exists(_chatHistoryPath))
+                {
+                    var json = System.IO.File.ReadAllText(_chatHistoryPath);
+                    var messages = System.Text.Json.JsonSerializer.Deserialize<List<ChatMessage>>(json);
+                    if (messages != null)
+                    {
+                        ChatMessages.Clear();
+                        foreach (var msg in messages)
+                        {
+                            ChatMessages.Add(msg);
+                        }
+                    }
+                }
+            }
+            catch { /* Ignore load errors */ }
+        }
+
+        private void SaveChatHistory()
+        {
+            try
+            {
+                var json = System.Text.Json.JsonSerializer.Serialize(ChatMessages);
+                System.IO.File.WriteAllText(_chatHistoryPath, json);
+            }
+            catch { /* Ignore save errors */ }
         }
 
         partial void OnSelectedFilterChanged(string value)
@@ -354,23 +406,59 @@ namespace DominiShop.ViewModel
         }
 
         [RelayCommand]
-        public void StartChat()
+        public void OpenChat()
         {
-            if (ChatMessages.Count == 0)
-            {
-                ChatMessages.Add(new ChatMessage 
-                { 
-                    Role = "AI", 
-                    Text = "I have successfully analyzed the sales, revenue, and profit data. Based on the recent trends, it looks like there are opportunities to optimize product bundles. How can I assist you with your business planning today?" 
-                });
-            }
             IsChatVisible = true;
+        }
+
+        [RelayCommand]
+        public async Task StartChatAsync()
+        {
+            IsChatVisible = true;
+            
+            _systemPromptContext = """
+                You are an AI business analyst assistant for a Vietnamese retail shop management system called DominiShop.
+                
+                IMPORTANT RULES:
+                - All monetary values in the data (prices, revenue, profit, TotalPrice) are in Vietnamese Dong (VND). Never convert or assume another currency.
+                - Always display monetary values with the "₫" symbol or write "VND" after numbers (e.g. 150,000 ₫).
+                - The data belongs to a single shop owner. Analyze only the data provided.
+                - Respond concisely and use markdown formatting (headers, bullet points, bold) for clarity.
+                - When making recommendations, be specific and actionable.
+                - NEVER use raw HTML tags (such as <ul>, <li>, <br>, <b>, <strong>, etc.) anywhere in your response. Use only standard markdown syntax.
+                - Inside markdown table cells, NEVER use lists. Use plain text separated by commas or semicolons instead.
+                
+                The following is a CSV snapshot of the owner's current shop data:
+                
+                """ + GenerateCsvData();
+
+            IsTyping = true;
+            ChatMessages.Add(new ChatMessage { Role = "User", Text = "Please analyze my report data and provide a summary and recommendations." });
+            SaveChatHistory();
+            
+            var reply = await _aiService.SendMessageAsync(ChatMessages.TakeLast(15), _systemPromptContext);
+            
+            ChatMessages.Add(new ChatMessage { Role = "AI", Text = StripHtmlTags(reply) });
+            IsTyping = false;
+            SaveChatHistory();
         }
 
         [RelayCommand]
         public void CloseChat()
         {
             IsChatVisible = false;
+        }
+
+        [RelayCommand]
+        public void ClearChat()
+        {
+            ChatMessages.Clear();
+            try
+            {
+                if (System.IO.File.Exists(_chatHistoryPath))
+                    System.IO.File.Delete(_chatHistoryPath);
+            }
+            catch { /* Ignore */ }
         }
 
         [RelayCommand]
@@ -383,11 +471,68 @@ namespace DominiShop.ViewModel
             CurrentChatInput = string.Empty;
 
             ChatMessages.Add(new ChatMessage { Role = "User", Text = userText });
+            SaveChatHistory();
 
-            // Simulate AI delay
-            await Task.Delay(1000);
+            IsTyping = true;
+            var reply = await _aiService.SendMessageAsync(ChatMessages.TakeLast(15), _systemPromptContext);
+            ChatMessages.Add(new ChatMessage { Role = "AI", Text = StripHtmlTags(reply) });
+            IsTyping = false;
+            SaveChatHistory();
+        }
 
-            ChatMessages.Add(new ChatMessage { Role = "AI", Text = "That's a great point. Considering the report data, focusing on top-performing products while re-evaluating underperforming ones could improve overall profit margins." });
+        private static string StripHtmlTags(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input)) return input;
+            // Replace common block-level HTML that breaks markdown rendering
+            var result = System.Text.RegularExpressions.Regex.Replace(input, @"<ul[^>]*>", "\n");
+            result = System.Text.RegularExpressions.Regex.Replace(result, @"</ul>", "\n");
+            result = System.Text.RegularExpressions.Regex.Replace(result, @"<li[^>]*>", "- ");
+            result = System.Text.RegularExpressions.Regex.Replace(result, @"</li>", "\n");
+            result = System.Text.RegularExpressions.Regex.Replace(result, @"<br\s*/?>", "\n");
+            // Strip any remaining HTML tags
+            result = System.Text.RegularExpressions.Regex.Replace(result, @"<[^>]+>", string.Empty);
+            return result.Trim();
+        }
+
+        private string GenerateCsvData()
+        {
+            var sb = new System.Text.StringBuilder();
+
+            sb.AppendLine("--- PRODUCTS ---");
+            sb.AppendLine("Id,Name,BasePrice,CategoryId");
+            foreach (var p in _allProducts)
+            {
+                sb.AppendLine($"{p.Id},\"{p.Name}\",{p.BasePrice},{p.CategoryId}");
+            }
+
+            sb.AppendLine("\n--- CATEGORIES ---");
+            sb.AppendLine("Id,Name");
+            foreach (var c in _allCategories)
+            {
+                sb.AppendLine($"{c.Id},\"{c.Name}\"");
+            }
+
+            sb.AppendLine("\n--- ORDERS ---");
+            sb.AppendLine("Id,OrderAt,TotalPrice");
+            foreach (var o in _allOrders)
+            {
+                sb.AppendLine($"{o.Id},{o.OrderAt:yyyy-MM-dd HH:mm},{o.TotalPrice}");
+            }
+
+            sb.AppendLine("\n--- ORDER DETAILS ---");
+            sb.AppendLine("OrderId,ProductId,Quantity,Price");
+            foreach (var o in _allOrders)
+            {
+                if (o.OrderDetails != null)
+                {
+                    foreach (var d in o.OrderDetails)
+                    {
+                        sb.AppendLine($"{o.Id},{d.ProductId},{d.Quantity},{d.Price}");
+                    }
+                }
+            }
+
+            return sb.ToString();
         }
     }
 }
