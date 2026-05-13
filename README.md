@@ -97,13 +97,20 @@ DominiShop/                          ← Solution root
 ## ✅ Completed Functions
 
 - Account Login/Registration
-- User Information Management
-- Data Search
-- Main Data CRUD
-- User Permissions
-- Responsive UI
-- Database Connection
-- Input Data Validation
+- Dashboard
+- Product Management
+- Order Management
+- Category Management
+- Customer Management
+- Voucher Management
+- Loyal Customer Management
+- Tax Management
+- App config
+- MVVM Architecture
+- Invoice Printing
+- Reports and Statistics
+- Dependency Injection
+-AI Chatbot / LLM Integration
 
 ---
 
@@ -118,16 +125,8 @@ DominiShop/                          ← Solution root
 > The following functions have been extensively researched and implemented by the team, and we hope the instructor will consider awarding points:
 
 - System Architecture Design using MVVM Model
-
-- User Interface and User Experience Optimization (UI/UX)
-
-- Exception Handling
-
-- Database Integration and Query Optimization
-
-- Responsive Layout on Multiple Screen Sizes
-
-- Researching Docker/CI-CD/ Authentication (if applicable)
+- Reporting and Statistics
+- AI Chatbot / LLM Integration
 
 ---
 
