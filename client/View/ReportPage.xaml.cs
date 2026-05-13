@@ -25,10 +25,7 @@ namespace DominiShop.View
             await ViewModel.InitializeAsync();
         }
 
-        public Visibility IsCustomDateVisible(string filter)
-        {
-            return filter == "Custom Date Range" ? Visibility.Visible : Visibility.Collapsed;
-        }
+
 
         private void ProductSearchBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
         {
