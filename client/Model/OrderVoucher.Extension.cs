@@ -5,7 +5,7 @@ namespace DominiShop.Model;
 public partial class OrderVoucher : BaseModel
 {
     [NotMapped]
-    public string VoucherCode => Voucher?.Code ?? (VoucherId.HasValue ? $"Voucher ID: {VoucherId}" : "—");
+    public string VoucherCode => Voucher?.Code ?? "—";
 
     [NotMapped]
     public string VoucherDiscount => Voucher?.DisplayDiscount ?? "—";

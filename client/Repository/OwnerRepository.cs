@@ -45,7 +45,7 @@ public class OwnerRepository : IRepo<Owner, int>
         }
         catch (Exception ex)
         {
-            throw new Exception($"Error while fetching Owner: {ex.Message}");
+            throw new Exception($"Lỗi khi lấy danh sách Owner: {ex.Message}");
         }
     }
 
@@ -57,7 +57,7 @@ public class OwnerRepository : IRepo<Owner, int>
         }
         catch (Exception ex)
         {
-            throw new Exception($"Error while finding Owner with ID {id}: {ex.Message}");
+            throw new Exception($"Lỗi khi tìm Owner theo ID {id}: {ex.Message}");
         }
     }
         
@@ -95,11 +95,11 @@ public class OwnerRepository : IRepo<Owner, int>
         catch (DbUpdateException ex)
         {
             var message = ex.InnerException?.Message ?? ex.Message;
-            throw new Exception($"Database error while updating Owner.");
+            throw new Exception($"Lỗi Database khi cập nhật Owner: {message}");
         }
         catch (Exception ex)
         {
-            throw new Exception($"Unidentified error updating Owner.");
+            throw new Exception($"Lỗi không xác định khi cập nhật Owner: {ex.Message}");
         }
     }
 
@@ -117,7 +117,7 @@ public class OwnerRepository : IRepo<Owner, int>
         }
         catch (Exception ex)
         {
-            throw new Exception($"Error while deleting Owner (ID: {id}): {ex.Message}");
+            throw new Exception($"Lỗi khi xóa Owner (ID: {id}): {ex.Message}");
         }
     }
 
@@ -132,7 +132,7 @@ public class OwnerRepository : IRepo<Owner, int>
         }
         catch (Exception ex)
         {
-            throw new Exception($"Error while finding Owner with Email: {ex.Message}");
+            throw new Exception($"Lỗi khi tìm Owner theo Email: {ex.Message}");
         }
     }
 }

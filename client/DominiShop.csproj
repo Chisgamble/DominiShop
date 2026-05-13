@@ -20,18 +20,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Remove="Assets\placeholder.png" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Remove="appsettings.json" />
     <None Remove="Assets\logo.jpg" />
     <None Remove="View\CategoryPage.xaml" />
-    <None Remove="View\ConfigPage.xaml" />
     <None Remove="View\InventoryPage.xaml" />
     <None Remove="View\ProductPage.xaml" />
-    <None Remove="View\SettingPage.xaml" />
-    <None Remove="View\StatisticsPage.xaml" />
     <None Remove="View\ReportPage.xaml" />
     <None Remove="View\TaxPage.xaml" />
   </ItemGroup>
@@ -64,7 +57,6 @@
     <ProjectCapability Include="Msix" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="ClosedXML" Version="0.105.0" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="CommunityToolkit.WinUI.UI.Controls.DataGrid" Version="7.1.2" />
     <PackageReference Include="LiveChartsCore.SkiaSharpView.WinUI" Version="2.0.2" />
@@ -84,11 +76,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Core\" />
-  </ItemGroup>
-  <ItemGroup>
-    <Page Update="View\SettingPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
   </ItemGroup>
   <ItemGroup>
     <Page Update="View\TaxPage.xaml">

@@ -35,38 +35,4 @@ public class OrderService(OrderRepository orderRepo, AuthService authService)
         }
         catch (Exception ex) { return (false, null, ex.Message); }
     }
-
-    public async Task<(bool Success, string? Error)> UpdateOrderStatusAsync(int orderId, string status)
-    {
-        try
-        {
-            var result = await _repo.UpdateStatusAsync(orderId, status);
-            return result ? (true, null) : (false, "Order not found");
-        }
-        catch (Exception ex) { return (false, ex.Message); }
-    }
-
-    public async Task<(bool Success, Order? Data, string? Error)> UpdateOrderAsync(Order order)
-    {
-        try
-        {
-            if (order.OrderDetails == null || order.OrderDetails.Count == 0)
-                return (false, null, "Order must contain at least 1 product.");
-
-            order.OwnerId = GetOwnerId();
-            var result = await _repo.UpdateOrderAsync(order);
-            return (true, result, null);
-        }
-        catch (Exception ex) { return (false, null, ex.Message); }
-    }
-
-    public async Task<(bool Success, string? Error)> DeleteOrderAsync(int orderId)
-    {
-        try
-        {
-            var result = await _repo.DeleteOrderAsync(orderId);
-            return result ? (true, null) : (false, "Order not found");
-        }
-        catch (Exception ex) { return (false, ex.Message); }
-    }
 }

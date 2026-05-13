@@ -22,10 +22,9 @@ public class ProductRepository : IRepo<Product, int>
         try
         {
             return await _context.Products
-                .AsNoTracking()
-                .Include(p => p.Category)
-                .Include(p => p.ProductImages)
-                .Where(p => p.OwnerId == ownerId && p.IsDeleted != true)
+                .AsNoTracking() 
+                .Include(p => p.Category) 
+                .Where(p => p.OwnerId == ownerId && p.IsDeleted != true) 
                 .OrderByDescending(p => p.CreatedAt)
                 .ToListAsync();
         }
@@ -51,10 +50,7 @@ public class ProductRepository : IRepo<Product, int>
     {
         try
         {
-            var existing = await _context.Products
-                .Include(p => p.ProductImages)
-                .FirstOrDefaultAsync(p => p.Id == item.Id && p.OwnerId == item.OwnerId);
-
+            var existing = await _context.Products.FirstOrDefaultAsync(p => p.Id == item.Id && p.OwnerId == item.OwnerId);
             if (existing == null) return false;
 
             existing.Name = item.Name;
@@ -64,17 +60,6 @@ public class ProductRepository : IRepo<Product, int>
             existing.Note = item.Note;
             existing.CategoryId = item.CategoryId;
             existing.UpdatedAt = DateTime.UtcNow;
-
-            _context.ProductImages.RemoveRange(existing.ProductImages);
-
-            foreach (var img in item.ProductImages)
-            {
-                existing.ProductImages.Add(new ProductImage
-                {
-                    ImageUrl = img.ImageUrl,
-                    IsPrimary = img.IsPrimary
-                });
-            }
 
             await _context.SaveChangesAsync();
             return true;
