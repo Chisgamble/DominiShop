@@ -10,18 +10,29 @@ using System.Threading.Tasks;
 
 namespace DominiShop.ViewModel;
 
-public partial class CategoryViewModel(CategoryService categoryService) : BaseViewModel
+public partial class CategoryViewModel(CategoryService categoryService, SettingService settingService) : BaseViewModel
 {
     private readonly CategoryService _service = categoryService;
+    private readonly SettingService _settingService = settingService;
     private List<Category> _masterCategories = new();
 
     [ObservableProperty] public partial bool IsLoading { get; set; }
     [ObservableProperty] public partial bool IsEditMode { get; set; }
 
-    // --- TÌM KIẾM & SẮP XẾP ---
     [ObservableProperty] public partial string SearchText { get; set; } = string.Empty;
     [ObservableProperty] public partial string SelectedSortOption { get; set; } = "Name (A-Z)";
 
+
+    [ObservableProperty] public partial int CurrentPage { get; set; } = 1;
+    [ObservableProperty] public partial int TotalPages { get; set; } = 1;
+    [ObservableProperty] public partial int PageSize { get; set; } = settingService.GetCategoryPageSize();
+
+    public List<int> PageSizeOptions { get; } = new() { 5, 10, 15, 20 };
+    public bool CanGoPrevious => CurrentPage > 1;
+    public bool CanGoNext => CurrentPage < TotalPages;
+    public string PagingInfo => $"Page {CurrentPage} of {TotalPages}";
+
+    private List<Category> _currentFilteredList = new();
     public List<string> SortOptions { get; } = new()
     {
         "Name (A-Z)",
@@ -37,17 +48,14 @@ public partial class CategoryViewModel(CategoryService categoryService) : BaseVi
     partial void OnSearchTextChanged(string value) => FilterData();
     partial void OnSelectedSortOptionChanged(string value) => FilterData();
 
-    // --- QUẢN LÝ CHỌN ITEM ---
     [ObservableProperty] public partial Category? SelectedCategory { get; set; }
     [ObservableProperty] public partial Category EditingCategory { get; set; } = new();
 
-    // Biến bool này là CHÌA KHÓA để giao diện ẩn/hiện chính xác
     public bool HasSelectedCategory => SelectedCategory != null;
 
     partial void OnSelectedCategoryChanged(Category? value)
     {
         OnPropertyChanged(nameof(HasSelectedCategory));
-        // Khi chọn một item mới, luôn ép nó về chế độ Xem Chi Tiết (thoát chế độ Sửa)
         if (value != null) IsEditMode = false;
     }
 
@@ -55,13 +63,21 @@ public partial class CategoryViewModel(CategoryService categoryService) : BaseVi
     public async Task LoadDataAsync()
     {
         IsLoading = true;
+
+        int savedPageSize = _settingService.GetCategoryPageSize();
+        if (PageSize != savedPageSize)
+        {
+            PageSize = savedPageSize;
+        }
+
+        OnPropertyChanged(nameof(PageSize));
+
         try
         {
             var result = await _service.GetCategoriesAsync();
             if (result.Success && result.Data != null)
             {
                 _masterCategories = result.Data;
-                // Gọi hàm này để đẩy dữ liệu vào FilteredCategories
                 FilterData();
             }
         }
@@ -89,13 +105,9 @@ public partial class CategoryViewModel(CategoryService categoryService) : BaseVi
             _ => query.OrderBy(c => c.Name)
         };
 
-        var results = query.ToList();
-
-        FilteredCategories.Clear();
-        foreach (var item in results)
-        {
-            FilteredCategories.Add(item);
-        }
+        _currentFilteredList = query.ToList();
+        CurrentPage = 1;
+        ApplyPaging();
     }
 
     [RelayCommand]
@@ -120,7 +132,6 @@ public partial class CategoryViewModel(CategoryService categoryService) : BaseVi
         if (isSuccess)
         {
             IsEditMode = false;
-            // Gọi lại hàm Load để refresh ObservableCollection ngay lập tức
             await LoadDataAsync();
         }
         IsLoading = false;
@@ -137,7 +148,6 @@ public partial class CategoryViewModel(CategoryService categoryService) : BaseVi
         {
             SelectedCategory = null;
             IsEditMode = false;
-            // Refresh lại danh sách sau khi xóa thành công
             await LoadDataAsync();
         }
         IsLoading = false;
@@ -158,7 +168,41 @@ public partial class CategoryViewModel(CategoryService categoryService) : BaseVi
     private void Cancel()
     {
         IsEditMode = false;
-        // Nếu đang tạo mới mà bấm Hủy thì xóa bỏ vùng chọn luôn
         if (EditingCategory.Id == 0) SelectedCategory = null;
+    }
+
+    partial void OnPageSizeChanged(int value)
+    {
+        if (value > 0)
+        {
+            _settingService.SaveCategoryPageSize(value);
+        }
+
+        CurrentPage = 1;
+        ApplyPaging();
+    }
+
+    [RelayCommand]
+    private void NextPage() { if (CanGoNext) { CurrentPage++; ApplyPaging(); } }
+
+    [RelayCommand]
+    private void PreviousPage() { if (CanGoPrevious) { CurrentPage--; ApplyPaging(); } }
+
+    private void ApplyPaging()
+    {
+        TotalPages = (int)Math.Ceiling(_currentFilteredList.Count / (double)PageSize);
+        if (TotalPages == 0) TotalPages = 1;
+
+        var pagedData = _currentFilteredList
+            .Skip((CurrentPage - 1) * PageSize)
+            .Take(PageSize)
+            .ToList();
+
+        FilteredCategories.Clear();
+        foreach (var item in pagedData) FilteredCategories.Add(item);
+
+        OnPropertyChanged(nameof(CanGoPrevious));
+        OnPropertyChanged(nameof(CanGoNext));
+        OnPropertyChanged(nameof(PagingInfo));
     }
 }

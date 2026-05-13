@@ -17,6 +17,7 @@ using Microsoft.UI.Xaml.Navigation;
 using Microsoft.UI.Xaml.Shapes;
 using Serilog;
 using Supabase;
+using Supabase.Gotrue;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -38,7 +39,7 @@ namespace DominiShop
     /// </summary>
     public partial class App : Application
     {
-        private static Window? _window;
+        public static Window MainWindow { get; private set; }
         public static IServiceProvider Services { get; private set; } = null!;
 
         /// <summary>
@@ -60,19 +61,22 @@ namespace DominiShop
         private static ServiceProvider BuildServices()
         {
             var services = new ServiceCollection();
+            var config = new ConfigService();
+            services.AddSingleton(config);
 
             var configuration = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
             .Build();
 
-            var url = configuration["Supabase:Url"];
-            var key = configuration["Supabase:Key"];
+            var url = string.IsNullOrEmpty(config.SupabaseUrl) ? configuration["Supabase:Url"] : config.SupabaseUrl;
+            var key = string.IsNullOrEmpty(config.SupabaseKey) ? configuration["Supabase:Key"] : config.SupabaseKey;
+            var db = string.IsNullOrEmpty(config.DbConnection) ? configuration.GetConnectionString("DefaultConnection") : config.DbConnection;
             var options = new SupabaseOptions { AutoConnectRealtime = true };
 
             services.AddDbContext<PostgresContext>(options =>
                 options.UseNpgsql(
-                    configuration.GetConnectionString("DefaultConnection"),
+                    db,
                     npgsqlOptions => npgsqlOptions.EnableRetryOnFailure(
                         maxRetryCount: 3,
                         maxRetryDelay: TimeSpan.FromSeconds(5),
@@ -81,6 +85,10 @@ namespace DominiShop
                 ServiceLifetime.Transient);
 
             services.AddSingleton(provider => new Supabase.Client(url!, key, options));
+
+            //config
+            services.AddSingleton<ConfigService>();
+            services.AddTransient<ConfigViewModel>();
 
             // navigation
             services.AddSingleton<INavigationService, NavigationService>();
@@ -109,11 +117,13 @@ namespace DominiShop
             // main
             services.AddSingleton<MainViewModel>();
 
+            // category
             services.AddTransient<IRepo<Category, int>, CategoryRepository>();
             services.AddTransient<CategoryRepository>();
             services.AddSingleton<CategoryService>();
             services.AddTransient<CategoryViewModel>();
 
+            // product
             services.AddTransient<ProductRepository>();
             services.AddTransient<ProductService>();
             services.AddTransient<ProductViewModel>();
@@ -123,8 +133,14 @@ namespace DominiShop
             services.AddTransient<OrderService>();
             services.AddTransient<OrderViewModel>();
 
-            // report
-            services.AddTransient<ReportViewModel>();
+            // dashboard
+            services.AddSingleton<DashboardService>();
+            services.AddTransient<DashboardRepository>();
+            services.AddTransient<DashboardViewModel>();
+
+            // setting
+            services.AddSingleton<SettingService>();
+            services.AddTransient<SettingsViewModel>();
 
             return services.BuildServiceProvider();
         }
@@ -135,15 +151,17 @@ namespace DominiShop
         /// <param name="args">Details about the launch request and process.</param>
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
-            _window = new MainWindow();
-            _window.Activate();
+            MainWindow = new MainWindow(); 
+            MainWindow.Activate();         
         }
 
         public static void NavigateToMain()
         {
-            if (_window is MainWindow mw)
+            if (MainWindow is MainWindow mw)
+            {
                 mw.Navigate(typeof(MainPage));
-            else if (_window?.Content is Frame rootFrame)
+            }
+            else if (MainWindow?.Content is Frame rootFrame)
             {
                 rootFrame.Navigate(typeof(MainPage));
             }

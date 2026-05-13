@@ -1,7 +1,9 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using ClosedXML.Excel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DominiShop.Model;
 using DominiShop.Service;
+using Supabase.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -10,10 +12,12 @@ using System.Threading.Tasks;
 
 namespace DominiShop.ViewModel;
 
-public partial class ProductViewModel(ProductService productService, CategoryService categoryService) : BaseViewModel
+public partial class ProductViewModel(ProductService productService, CategoryService categoryService, SettingService settingService, Supabase.Client supabaseClient) : BaseViewModel
 {
     private readonly ProductService _productService = productService;
     private readonly CategoryService _categoryService = categoryService;
+    private readonly SettingService _settingService = settingService;
+    private readonly Supabase.Client _supabase = supabaseClient;
 
     private List<Product> _masterProducts = new();
 
@@ -27,6 +31,18 @@ public partial class ProductViewModel(ProductService productService, CategorySer
     [ObservableProperty] public partial string SearchText { get; set; } = string.Empty;
     [ObservableProperty] public partial Category? SelectedFilterCategory { get; set; }
     [ObservableProperty] public partial string SelectedSortOption { get; set; } = "Name (A-Z)";
+
+
+    [ObservableProperty] public partial int CurrentPage { get; set; } = 1;
+    [ObservableProperty] public partial int TotalPages { get; set; } = 1;
+    [ObservableProperty] public partial int PageSize { get; set; } = settingService.GetProductPageSize();
+
+    public List<int> PageSizeOptions { get; } = new() { 5, 10, 15, 20 };
+    public bool CanGoPrevious => CurrentPage > 1;
+    public bool CanGoNext => CurrentPage < TotalPages;
+    public string PagingInfo => $"Page {CurrentPage} of {TotalPages}";
+
+    private List<Product> _currentFilteredList = new();
 
     public List<string> SortOptions { get; } = new()
     {
@@ -51,10 +67,23 @@ public partial class ProductViewModel(ProductService productService, CategorySer
 
     [ObservableProperty] public partial Category QuickAddCategory { get; set; } = new();
 
+    [ObservableProperty] public partial ObservableCollection<string> EditingImageUrls { get; set; } = new();
+
+    private List<string> _localFilesToUpload = new();
+
     [RelayCommand]
     public async Task LoadDataAsync()
     {
         IsLoading = true;
+
+        int savedPageSize = _settingService.GetProductPageSize();
+        if (PageSize != savedPageSize)
+        {
+            PageSize = savedPageSize;
+        }
+
+        OnPropertyChanged(nameof(PageSize));
+
         try
         {
             var categoryResult = await _categoryService.GetCategoriesAsync();
@@ -107,9 +136,9 @@ public partial class ProductViewModel(ProductService productService, CategorySer
             _ => query.OrderBy(p => p.Name)
         };
 
-        var results = query.ToList();
-        FilteredProducts.Clear();
-        foreach (var item in results) FilteredProducts.Add(item);
+        _currentFilteredList = query.ToList();
+        CurrentPage = 1;
+        ApplyPaging();
     }
 
     [RelayCommand]
@@ -121,10 +150,12 @@ public partial class ProductViewModel(ProductService productService, CategorySer
         EditingInStock = 0;
         EditingSold = 0;
         EditingTotalQuantity = 0;
-
         EditingCategoryId = AvailableCategories.FirstOrDefault()?.Id;
 
-        IsEditMode = true;
+        EditingImageUrls.Clear();
+
+        IsEditMode = false;
+
         SelectedProduct = null;
     }
 
@@ -149,8 +180,16 @@ public partial class ProductViewModel(ProductService productService, CategorySer
         EditingInStock = product.Quantity;
         EditingSold = product.Sold;
         EditingTotalQuantity = EditingInStock + EditingSold;
-
         EditingCategoryId = product.CategoryId;
+
+        EditingImageUrls.Clear();
+        if (product.ProductImages != null)
+        {
+            foreach (var img in product.ProductImages.OrderByDescending(i => i.IsPrimary))
+            {
+                EditingImageUrls.Add(img.ImageUrl);
+            }
+        }
 
         IsEditMode = true;
     }
@@ -159,36 +198,54 @@ public partial class ProductViewModel(ProductService productService, CategorySer
     private async Task SaveAsync()
     {
         IsLoading = true;
-        EditingProduct.BasePrice = (decimal)EditingBasePrice;
-        EditingProduct.Price = (decimal)EditingSellPrice;
-        EditingProduct.Quantity = (int)EditingInStock;
-        EditingProduct.Sold = (int)EditingSold;
-
-        EditingProduct.CategoryId = EditingCategoryId ?? 0;
-
-        bool isSuccess = EditingProduct.Id == 0
-            ? (await _productService.CreateProductAsync(EditingProduct)).Success
-            : (await _productService.UpdateProductAsync(EditingProduct)).Success;
-
-        if (isSuccess)
+        try
         {
-            IsEditMode = false;
-            await LoadDataAsync();
-        }
-        IsLoading = false;
-    }
+            EditingProduct.ProductImages = new List<ProductImage>();
 
-    [RelayCommand]
-    public async Task DeleteAsync(Product? product)
-    {
-        if (product == null) return;
-        IsLoading = true;
-        if ((await _productService.DeleteProductAsync(product.Id)).Success)
-        {
-            SelectedProduct = null;
-            await LoadDataAsync();
+            for (int i = 0; i < EditingImageUrls.Count; i++)
+            {
+                string currentUrl = EditingImageUrls[i];
+
+                if (!currentUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                {
+                    string ext = System.IO.Path.GetExtension(currentUrl);
+                    string fileName = $"{Guid.NewGuid()}{ext}";
+
+                    await _supabase.Storage.From("product_image").Upload(currentUrl, fileName);
+                    currentUrl = _supabase.Storage.From("product_image").GetPublicUrl(fileName);
+                }
+
+                EditingProduct.ProductImages.Add(new ProductImage
+                {
+                    ImageUrl = currentUrl,
+                    IsPrimary = (i == 0) 
+                });
+            }
+
+            EditingProduct.BasePrice = (decimal)EditingBasePrice;
+            EditingProduct.Price = (decimal)EditingSellPrice;
+            EditingProduct.Quantity = (int)EditingInStock;
+            EditingProduct.Sold = (int)EditingSold;
+            EditingProduct.CategoryId = EditingCategoryId ?? 0;
+
+            bool isSuccess = EditingProduct.Id == 0
+                ? (await _productService.CreateProductAsync(EditingProduct)).Success
+                : (await _productService.UpdateProductAsync(EditingProduct)).Success;
+
+            if (isSuccess)
+            {
+                IsEditMode = false;
+                await LoadDataAsync();
+            }
         }
-        IsLoading = false;
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error saving product: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
 
@@ -210,6 +267,220 @@ public partial class ProductViewModel(ProductService productService, CategorySer
         }
 
         IsLoading = false;
-        return (false, res.Error ?? "Category creation error");
+        return (false, res.Error ?? "Failed to create category");
     }
+
+
+
+    partial void OnPageSizeChanged(int value)
+    {
+
+        if (value > 0)
+        {
+            _settingService.SaveProductPageSize(value);
+        }
+
+        CurrentPage = 1;
+        ApplyPaging();
+    }
+
+    [RelayCommand]
+    private void NextPage() { if (CanGoNext) { CurrentPage++; ApplyPaging(); } }
+
+    [RelayCommand]
+    private void PreviousPage() { if (CanGoPrevious) { CurrentPage--; ApplyPaging(); } }
+
+    private void ApplyPaging()
+    {
+        TotalPages = (int)Math.Ceiling(_currentFilteredList.Count / (double)PageSize);
+        if (TotalPages == 0) TotalPages = 1;
+
+        var pagedData = _currentFilteredList
+            .Skip((CurrentPage - 1) * PageSize)
+            .Take(PageSize)
+            .ToList();
+
+        FilteredProducts.Clear();
+        foreach (var item in pagedData) FilteredProducts.Add(item);
+
+        OnPropertyChanged(nameof(CanGoPrevious));
+        OnPropertyChanged(nameof(CanGoNext));
+        OnPropertyChanged(nameof(PagingInfo));
+    }
+
+
+    [RelayCommand]
+    public async Task ExportExcelAsync(string filePath)
+    {
+        IsLoading = true;
+        try
+        {
+            using var workbook = new XLWorkbook();
+            var worksheet = workbook.Worksheets.Add("Products");
+
+            worksheet.Cell(1, 1).Value = "Product Name";
+            worksheet.Cell(1, 2).Value = "Category";
+            worksheet.Cell(1, 3).Value = "Base Price";
+            worksheet.Cell(1, 4).Value = "Sell Price";
+            worksheet.Cell(1, 5).Value = "Quantity";
+            worksheet.Cell(1, 6).Value = "Note";
+            worksheet.Cell(1, 7).Value = "Images";
+
+            var headerRow = worksheet.Range("A1:G1");
+            headerRow.Style.Font.Bold = true;
+            headerRow.Style.Fill.BackgroundColor = XLColor.LightGray;
+
+            int row = 2;
+            foreach (var p in _masterProducts)
+            {
+                worksheet.Cell(row, 1).Value = p.Name;
+                worksheet.Cell(row, 2).Value = p.Category?.Name ?? "";
+                worksheet.Cell(row, 3).Value = p.BasePrice;
+                worksheet.Cell(row, 4).Value = p.Price;
+                worksheet.Cell(row, 5).Value = p.Quantity;
+                worksheet.Cell(row, 6).Value = p.Note;
+
+                if (p.ProductImages != null && p.ProductImages.Any())
+                {
+                    worksheet.Cell(row, 7).Value = string.Join(";", p.ProductImages.Select(i => i.ImageUrl));
+                }
+
+                row++;
+            }
+
+            worksheet.Columns().AdjustToContents();
+            workbook.SaveAs(filePath);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(ex.Message);
+        }
+        finally { IsLoading = false; }
+    }
+
+    [RelayCommand]
+    public async Task<(bool Success, string Error)> ImportExcelAsync(string filePath)
+    {
+        IsLoading = true;
+        try
+        {
+            using var workbook = new XLWorkbook(filePath);
+            var worksheet = workbook.Worksheet(1);
+            var rows = worksheet.RangeUsed().RowsUsed().Skip(1); 
+
+            foreach (var row in rows)
+            {
+                string name = row.Cell(1).GetString().Trim();
+                if (string.IsNullOrEmpty(name)) continue;
+
+                string catName = row.Cell(2).GetString().Trim();
+                row.Cell(3).TryGetValue<decimal>(out decimal basePrice);
+                row.Cell(4).TryGetValue<decimal>(out decimal price);
+                row.Cell(5).TryGetValue<int>(out int qty);
+                string note = row.Cell(6).GetString().Trim();
+                string imagesRaw = row.Cell(7).GetString().Trim();
+
+                int categoryId = 0;
+                if (!string.IsNullOrEmpty(catName))
+                {
+                    var existCat = AvailableCategories.FirstOrDefault(c => c.Name.Equals(catName, StringComparison.OrdinalIgnoreCase));
+                    if (existCat != null)
+                    {
+                        categoryId = existCat.Id;
+                    }
+                    else
+                    {
+                        var newCat = new Category { Name = catName };
+                        var resCat = await _categoryService.CreateCategoryAsync(newCat);
+                        if (resCat.Success && resCat.Data != null)
+                        {
+                            AvailableCategories.Add(resCat.Data); 
+                            categoryId = resCat.Data.Id;
+                        }
+                    }
+                }
+
+                var existProd = _masterProducts.FirstOrDefault(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+                if (existProd != null)
+                {
+                    existProd.Quantity += qty; 
+
+                    if (basePrice > 0) existProd.BasePrice = basePrice;
+                    if (price > 0) existProd.Price = price;
+                    existProd.Note = note;
+                    if (categoryId > 0) existProd.CategoryId = categoryId;
+
+                    await _productService.UpdateProductAsync(existProd);
+                }
+                else
+                {
+                    var newProd = new Product
+                    {
+                        Name = name,
+                        CategoryId = categoryId,
+                        BasePrice = basePrice,
+                        Price = price,
+                        Quantity = qty,
+                        Sold = 0,
+                        Note = note,
+                        ProductImages = new List<ProductImage>()
+                    };
+
+                    if (!string.IsNullOrEmpty(imagesRaw))
+                    {
+                        var urls = imagesRaw.Split(';', StringSplitOptions.RemoveEmptyEntries);
+                        for (int i = 0; i < urls.Length && i < 10; i++)
+                        {
+                            newProd.ProductImages.Add(new ProductImage
+                            {
+                                ImageUrl = urls[i],
+                                IsPrimary = (i == 0)
+                            });
+                        }
+                    }
+
+                    await _productService.CreateProductAsync(newProd);
+                }
+            }
+
+            await LoadDataAsync(); 
+            return (true, string.Empty);
+        }
+        catch (Exception ex)
+        {
+            return (false, ex.Message);
+        }
+        finally { IsLoading = false; }
+    }
+
+    [RelayCommand]
+    public async Task PickImagesAsync(IEnumerable<string> filePaths)
+    {
+        foreach (var path in filePaths)
+        {
+            if (EditingImageUrls.Count >= 10) break;
+            if (!EditingImageUrls.Contains(path)) EditingImageUrls.Add(path);
+        }
+    }
+
+    public void RemoveImage(string url)
+    {
+        if (EditingImageUrls.Contains(url)) EditingImageUrls.Remove(url);
+    }
+
+    [RelayCommand]
+    public async Task DeleteAsync(Product? product)
+    {
+        if (product == null) return;
+        IsLoading = true;
+
+        var result = await _productService.DeleteProductAsync(product.Id);
+        if (result.Success)
+        {
+            await LoadDataAsync();
+        }
+
+        IsLoading = false;
+    }
+
 }

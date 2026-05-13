@@ -1,3 +1,5 @@
+using DominiShop.Service;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -36,10 +38,14 @@ namespace DominiShop.View
 
             if (appWindow != null)
             {
-                appWindow.Resize(new SizeInt32(1440, 1020));
-
-                CenterWindow(appWindow);
+                if (appWindow.Presenter is OverlappedPresenter presenter)
+                {
+                    presenter.Maximize();
+                }
             }
+
+            var navService = (NavigationService)App.Services.GetRequiredService<INavigationService>();
+            navService.Frame = this.RootFrame;
 
             RootFrame.Navigate(typeof(AuthPage));
         }

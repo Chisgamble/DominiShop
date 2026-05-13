@@ -20,7 +20,7 @@ public sealed partial class CategoryPage : Page
         this.Loaded += (s, e) => { _ = ViewModel.LoadDataAsync(); };
     }
 
-    private string GetDialogTitle(bool isEdit) => isEdit ? "Cập nhật danh mục" : "Thêm danh mục mới";
+    private string GetDialogTitle(bool isEdit) => isEdit ? "Edit Category" : "Add New Category";
 
     private async void OnAddNewClick(object sender, RoutedEventArgs e)
     {
@@ -28,37 +28,29 @@ public sealed partial class CategoryPage : Page
         EditDialog.XamlRoot = this.XamlRoot;
         await EditDialog.ShowAsync();
     }
-    // Xử lý khi nhấn vào dòng trên DataGrid
     private async void OnRowSelected(object sender, SelectionChangedEventArgs e)
     {
-        // Nếu unselect thì bỏ qua
         if (ViewModel.SelectedCategory == null) return;
 
-        // Lưu tạm category đang chọn
         var category = ViewModel.SelectedCategory;
 
-        // Hiển thị Popup chi tiết
         DetailDialog.XamlRoot = this.XamlRoot;
         var result = await DetailDialog.ShowAsync();
 
-        // RẤT QUAN TRỌNG: Reset vùng chọn để lần sau click lại dòng này nó vẫn nhận sự kiện
         ViewModel.SelectedCategory = null;
 
-        // Xử lý hành động người dùng chọn trong Popup Chi tiết
-        if (result == ContentDialogResult.Primary) // Nhấn Edit
+        if (result == ContentDialogResult.Primary) 
         {
             ViewModel.EditCommand.Execute(category);
             EditDialog.XamlRoot = this.XamlRoot;
             await EditDialog.ShowAsync();
         }
-        else if (result == ContentDialogResult.Secondary) // Nhấn Delete
+        else if (result == ContentDialogResult.Secondary) 
         {
             await ConfirmAndDelete(category);
         }
     }
 
-    // Tôi tách logic xác nhận xóa ra một hàm riêng để tái sử dụng
-    // Gọi hàm này cho cả nút Xóa bên ngoài và nút Xóa trong DetailDialog
     private async Task ConfirmAndDelete(Category category)
     {
         ContentDialog confirm = new ContentDialog
@@ -76,13 +68,11 @@ public sealed partial class CategoryPage : Page
         }
     }
 
-    // Sửa lại OnDeleteRowClick bên ngoài để dùng hàm chung ở trên
     private async void OnDeleteRowClick(object sender, RoutedEventArgs e)
     {
         var category = (sender as Button)?.DataContext as Category;
         if (category != null)
         {
-            // Ngăn sự kiện SelectionChanged nhảy vào lúc ta bấm nút Xóa
             ViewModel.SelectedCategory = null;
             await ConfirmAndDelete(category);
         }

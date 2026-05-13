@@ -12,10 +12,12 @@ using System.Threading.Tasks;
 
 namespace DominiShop.ViewModel
 {
-    public partial class VoucherViewModel(VoucherService voucherService) : BaseViewModel
+    public partial class VoucherViewModel(VoucherService voucherService, SettingService settingService) : BaseViewModel
     {
         private readonly VoucherService _service = voucherService;
+        private readonly SettingService _settingService = settingService;
         private List<Voucher> _masterVouchers = new();
+        private List<Voucher> _currentFilteredList = new();
 
         // States
         [ObservableProperty] public partial bool IsLoading { get; set; }
@@ -48,6 +50,15 @@ namespace DominiShop.ViewModel
         [ObservableProperty] public partial int EditingTypeIndex { get; set; } = -1;
         [ObservableProperty] public partial bool EditingIsActive { get; set; } = true;
 
+        [ObservableProperty] public partial int CurrentPage { get; set; } = 1;
+        [ObservableProperty] public partial int TotalPages { get; set; } = 1;
+        [ObservableProperty] public partial int PageSize { get; set; } = settingService.GetVoucherPageSize();
+
+        public List<int> PageSizeOptions { get; } = new() { 5, 10, 15, 20 };
+        public bool CanGoPrevious => CurrentPage > 1;
+        public bool CanGoNext => CurrentPage < TotalPages;
+        public string PagingInfo => $"Page {CurrentPage} of {TotalPages}";
+
         // Dynamic label and visibility for the discount value field
         // TypeOptions: 0 = percent, 1 = fixed, 2 = free_shipping
         public string DiscountValueHeader => EditingTypeIndex switch
@@ -76,6 +87,10 @@ namespace DominiShop.ViewModel
         public async Task LoadDataAsync()
         {
             IsLoading = true;
+
+            PageSize = _settingService.GetVoucherPageSize();
+            OnPropertyChanged(nameof(PageSize));
+
             try
             {
                 var result = await _service.GetVouchersAsync();
@@ -120,9 +135,38 @@ namespace DominiShop.ViewModel
                 _ => query.OrderByDescending(v => v.CreatedAt)
             };
 
-            FilteredVouchers.Clear();
-            foreach (var v in query) FilteredVouchers.Add(v);
+            _currentFilteredList = query.ToList();
+            CurrentPage = 1;
+            ApplyPaging();
         }
+
+        private void ApplyPaging()
+        {
+            TotalPages = (int)Math.Ceiling(_currentFilteredList.Count / (double)PageSize);
+            if (TotalPages == 0) TotalPages = 1;
+
+            var pagedData = _currentFilteredList
+                .Skip((CurrentPage - 1) * PageSize)
+                .Take(PageSize)
+                .ToList();
+
+            FilteredVouchers.Clear();
+            foreach (var item in pagedData) FilteredVouchers.Add(item);
+
+            OnPropertyChanged(nameof(CanGoPrevious));
+            OnPropertyChanged(nameof(CanGoNext));
+            OnPropertyChanged(nameof(PagingInfo));
+        }
+
+        partial void OnPageSizeChanged(int value)
+        {
+            if (value > 0) _settingService.SaveVoucherPageSize(value);
+            CurrentPage = 1;
+            ApplyPaging();
+        }
+
+        [RelayCommand] private void NextPage() { if (CanGoNext) { CurrentPage++; ApplyPaging(); } }
+        [RelayCommand] private void PreviousPage() { if (CanGoPrevious) { CurrentPage--; ApplyPaging(); } }
 
         // Commands
         [RelayCommand]
