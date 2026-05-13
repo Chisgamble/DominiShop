@@ -38,7 +38,7 @@
                 <StackPanel Spacing="0">
 
                     <!-- Logo -->
-                    <Image Source="ms-appx:///Assets/logo.jpg"
+                    <Image Source="ms-appx:///Assets/logo.svg"
                     Width="100" Height="80"
                     HorizontalAlignment="Center"
                     Margin="0,0,0,12"/>

@@ -25,7 +25,7 @@
 
   <ItemGroup>
     <None Remove="appsettings.json" />
-    <None Remove="Assets\logo.jpg" />
+    <None Remove="Assets\logo.svg" />
     <None Remove="View\CategoryPage.xaml" />
     <None Remove="View\ConfigPage.xaml" />
     <None Remove="View\InventoryPage.xaml" />

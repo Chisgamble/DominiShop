@@ -26,38 +26,87 @@ public sealed partial class OrderPage : Page
     public string GetToggleCustomerText(bool isCreating) =>
         isCreating ? "← Select existing customer" : "+ Create new customer";
 
+    private bool _isWizardActive = false;
+
     // ===== ADD ORDER — open step 1 =====
     private async void OnAddOrderClick(object sender, RoutedEventArgs e)
     {
-        await ViewModel.InitializeCreateFlowCommand.ExecuteAsync(null);
-        await ShowWizardAsync();
+        if (_isWizardActive) return;
+        _isWizardActive = true;
+        try
+        {
+            // Start initialization (resets state synchronously, then loads data async)
+            var initTask = ViewModel.InitializeCreateFlowCommand.ExecuteAsync(null);
+            
+            // Open the wizard immediately without waiting for network/DB calls
+            await ShowWizardAsync();
+            
+            // Ensure initialization is fully complete
+            await initTask;
+        }
+        finally
+        {
+            _isWizardActive = false;
+        }
     }
 
     private async Task ShowWizardAsync()
     {
+        bool isFirstStep = true;
         while (ViewModel.CurrentStep >= 1 && ViewModel.CurrentStep <= 3)
         {
-            if (ViewModel.CurrentStep == 1)
+            // Only delay when transitioning between steps to allow UI state to settle.
+            // On the first show, we want it to be immediate.
+            if (!isFirstStep)
+            {
+                await Task.Delay(50);
+            }
+            isFirstStep = false;
+
+            int stepToRender = ViewModel.CurrentStep;
+            ContentDialog dialog;
+
+            if (stepToRender == 1)
             {
                 Step1Error.IsOpen = false;
-                Step1Dialog.XamlRoot = this.XamlRoot;
-                var result = await Step1Dialog.ShowAsync();
-                if (result == ContentDialogResult.None) ViewModel.CurrentStep = 0;
+                dialog = Step1Dialog;
             }
-            else if (ViewModel.CurrentStep == 2)
+            else if (stepToRender == 2)
             {
                 Step2Error.IsOpen = false;
-                Step2Dialog.XamlRoot = this.XamlRoot;
-                var result = await Step2Dialog.ShowAsync();
-                if (result == ContentDialogResult.None) ViewModel.CurrentStep = 0;
+                dialog = Step2Dialog;
             }
-            else if (ViewModel.CurrentStep == 3)
+            else if (stepToRender == 3)
             {
                 Step3Error.IsOpen = false;
-                Step3Dialog.XamlRoot = this.XamlRoot;
-                var result = await Step3Dialog.ShowAsync();
-                if (result == ContentDialogResult.None || result == ContentDialogResult.Primary) 
+                dialog = Step3Dialog;
+            }
+            else break;
+
+            dialog.XamlRoot = this.XamlRoot;
+            
+            try
+            {
+                var result = await dialog.ShowAsync();
+
+                // If user cancelled (clicked outside or closed via 'X'), 
+                // and the ViewModel hasn't already moved to another step, stop the wizard.
+                if (result == ContentDialogResult.None && ViewModel.CurrentStep == stepToRender)
+                {
                     ViewModel.CurrentStep = 0;
+                }
+                // Step 3 'Primary' (Create/Update) also closes the wizard on success
+                else if (result == ContentDialogResult.Primary && stepToRender == 3)
+                {
+                    ViewModel.CurrentStep = 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"ContentDialog transition error: {ex.Message}");
+                // If we hit a collision, wait a bit longer and retry or exit
+                await Task.Delay(50);
+                if (ViewModel.CurrentStep == stepToRender) ViewModel.CurrentStep = 0;
             }
         }
     }
@@ -183,10 +232,22 @@ public sealed partial class OrderPage : Page
 
     private async void OnEditOrderClick(object sender, RoutedEventArgs e)
     {
-        if (ViewModel.SelectedOrder != null)
+        if (_isWizardActive || ViewModel.SelectedOrder == null) return;
+        
+        _isWizardActive = true;
+        try
         {
-            await ViewModel.StartEditOrderCommand.ExecuteAsync(ViewModel.SelectedOrder);
+            // Start edit initialization
+            var editTask = ViewModel.StartEditOrderCommand.ExecuteAsync(ViewModel.SelectedOrder);
+            
+            // Show wizard immediately
             await ShowWizardAsync();
+            
+            await editTask;
+        }
+        finally
+        {
+            _isWizardActive = false;
         }
     }
 

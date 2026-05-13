@@ -558,22 +558,32 @@ public partial class OrderViewModel : BaseViewModel
         IsLoading = true;
         try
         {
-            // Load customers
-            if (_cachedCustomers.Count == 0)
-            {
-                var custResult = await _customerService.GetCustomersAsync();
-                if (custResult.Success && custResult.Data != null)
-                    _cachedCustomers = custResult.Data;
-            }
+            // Start all tasks in parallel
+            var customersTask = _cachedCustomers.Count == 0 
+                ? _customerService.GetCustomersAsync() 
+                : Task.FromResult((Success: true, Data: (List<Customer>?)_cachedCustomers, Error: (string?)null));
+            
+            var productsTask = _productService.GetProductsAsync();
+            var categoriesTask = _categoryService.GetCategoriesAsync();
+            var vouchersTask = _voucherService.GetVouchersAsync();
+            var taxesTask = _taxService.GetTaxesAsync(new Repository.PagingRequest { PageSize = 100, PageNumber = 1 }, null, null);
+            var tiersTask = _customerService.GetTiersAsync();
+
+            await Task.WhenAll(customersTask, productsTask, categoriesTask, vouchersTask, taxesTask, tiersTask);
+
+            // Handle customers
+            var custResult = await customersTask;
+            if (custResult.Success && custResult.Data != null)
+                _cachedCustomers = custResult.Data;
             FilterCustomerSuggestions();
 
-            // Load products
-            var prodResult = await _productService.GetProductsAsync();
+            // Handle products
+            var prodResult = await productsTask;
             if (prodResult.Success && prodResult.Data != null)
                 _allProducts = prodResult.Data;
 
-            // Load categories
-            var catResult = await _categoryService.GetCategoriesAsync();
+            // Handle categories
+            var catResult = await categoriesTask;
             ProductFilterCategories.Clear();
             ProductFilterCategories.Add(new Category { Id = 0, Name = "Tất cả" });
             if (catResult.Success && catResult.Data != null)
@@ -583,8 +593,8 @@ public partial class OrderViewModel : BaseViewModel
             SelectedProductCategory = ProductFilterCategories.First();
             FilterProducts();
 
-            // Load vouchers
-            var voucherResult = await _voucherService.GetVouchersAsync();
+            // Handle vouchers
+            var voucherResult = await vouchersTask;
             AvailableVouchers.Clear();
             if (voucherResult.Success && voucherResult.Data != null)
             {
@@ -592,9 +602,8 @@ public partial class OrderViewModel : BaseViewModel
                     AvailableVouchers.Add(v);
             }
 
-            // Load taxes (all, not paged)
-            var taxResult = await _taxService.GetTaxesAsync(
-                new Repository.PagingRequest { PageSize = 100, PageNumber = 1 }, null, null);
+            // Handle taxes
+            var taxResult = await taxesTask;
             AvailableTaxes.Clear();
             if (taxResult.Success && taxResult.Data?.Items != null)
             {
@@ -603,13 +612,13 @@ public partial class OrderViewModel : BaseViewModel
                     AvailableTaxes.Add(new TaxSelection
                     {
                         Tax = t,
-                        IsSelected = t.AutoApply == true // Auto-apply taxes
+                        IsSelected = t.AutoApply == true
                     });
                 }
             }
 
-            // Load tiers for new customer creation
-            var tierResult = await _customerService.GetTiersAsync();
+            // Handle tiers
+            var tierResult = await tiersTask;
             AvailableCustomerTiers.Clear();
             if (tierResult.Success && tierResult.Data != null)
             {
