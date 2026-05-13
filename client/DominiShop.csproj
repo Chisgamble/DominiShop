@@ -20,6 +20,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="Assets\placeholder.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove="appsettings.json" />
     <None Remove="Assets\logo.jpg" />
     <None Remove="View\CategoryPage.xaml" />

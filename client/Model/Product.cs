@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
 
 namespace DominiShop.Model;
 
@@ -34,4 +36,6 @@ public partial class Product
     public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
 
     public virtual Owner? Owner { get; set; }
+
+    public virtual ICollection<ProductImage> ProductImages { get; set; } = new List<ProductImage>();
 }
