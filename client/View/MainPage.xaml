@@ -92,7 +92,7 @@
                     ToolTipService.ToolTip="Log out">
                 <StackPanel Orientation="Horizontal" Spacing="14">
                     <FontIcon Glyph="&#xE8D8;" FontSize="16"/>
-                    <TextBlock Text="Đăng xuất" Visibility="{x:Bind MainNavView.IsPaneOpen, Mode=OneWay}"/>
+                    <TextBlock Text="Log out" Visibility="{x:Bind MainNavView.IsPaneOpen, Mode=OneWay}"/>
                 </StackPanel>
             </Button>
         </NavigationView.PaneFooter>

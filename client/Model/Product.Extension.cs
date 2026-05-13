@@ -1,5 +1,5 @@
 using System.ComponentModel.DataAnnotations.Schema;
-
+using System.Linq;
 namespace DominiShop.Model;
 
 public partial class Product : BaseModel
@@ -36,4 +36,8 @@ public partial class Product : BaseModel
 
     [NotMapped]
     public string CategoryName => Category?.Name ?? "Chưa phân loại";
+
+    [NotMapped]
+    public string PrimaryImageUrl => ProductImages?.FirstOrDefault(img => img.IsPrimary)?.ImageUrl
+                                     ?? "ms-appx:///Assets/placeholder.png";
 }
