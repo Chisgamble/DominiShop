@@ -110,7 +110,7 @@ DominiShop/                          ← Solution root
 - Invoice Printing
 - Reports and Statistics
 - Dependency Injection
--AI Chatbot / LLM Integration
+- AI Chatbot / LLM Integration
 
 ---
 
