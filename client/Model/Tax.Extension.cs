@@ -28,5 +28,17 @@ namespace DominiShop.Model
 
         [NotMapped]
         public string OwnerName => Owner?.Username ?? "System";
+
+        [NotMapped]
+        public bool IsAutoApply
+        {
+            get => AutoApply == true;
+            set
+            {
+                AutoApply = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(AutoApply));
+            }
+        }
     }
 }

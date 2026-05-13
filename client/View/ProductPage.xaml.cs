@@ -6,6 +6,9 @@ using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using WinRT.Interop;
+using Windows.Storage.Pickers;
+using WinRT.Interop;
 
 namespace DominiShop.View;
 
@@ -147,6 +150,62 @@ public sealed partial class ProductPage : Page
         finally
         {
             deferral.Complete();
+        }
+    }
+
+
+    private async void OnExportClick(object sender, RoutedEventArgs e)
+    {
+        var picker = new FileSavePicker();
+
+        var hwnd = WindowNative.GetWindowHandle(App.MainWindow);
+        InitializeWithWindow.Initialize(picker, hwnd);
+
+        picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
+        picker.FileTypeChoices.Add("Excel Workbook", new List<string>() { ".xlsx" });
+        picker.SuggestedFileName = $"Products_Export_{DateTime.Now:yyyyMMdd}";
+
+        var file = await picker.PickSaveFileAsync();
+        if (file != null)
+        {
+            await ViewModel.ExportExcelAsync(file.Path);
+
+            ContentDialog success = new ContentDialog
+            {
+                Title = "Success",
+                Content = "Excel data exported successfully!",
+                CloseButtonText = "OK",
+                XamlRoot = this.XamlRoot
+            };
+            await success.ShowAsync();
+        }
+    }
+
+    private async void OnImportClick(object sender, RoutedEventArgs e)
+    {
+        var picker = new FileOpenPicker();
+
+        var hwnd = WindowNative.GetWindowHandle(App.MainWindow);
+        InitializeWithWindow.Initialize(picker, hwnd);
+
+        picker.ViewMode = PickerViewMode.Thumbnail;
+        picker.FileTypeFilter.Add(".xlsx");
+
+        var file = await picker.PickSingleFileAsync();
+        if (file != null)
+        {
+            var (success, error) = await ViewModel.ImportExcelAsync(file.Path);
+
+            ContentDialog resultDialog = new ContentDialog
+            {
+                Title = success ? "Success" : "Error",
+                Content = success
+                    ? "Excel data imported successfully! Product quantities have been automatically updated."
+                    : $"Failed to import Excel data: {error}",
+                CloseButtonText = "OK",
+                XamlRoot = this.XamlRoot
+            };
+            await resultDialog.ShowAsync();
         }
     }
 }

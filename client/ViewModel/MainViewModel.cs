@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using DominiShop.Service;
 using Microsoft.UI.Xaml.Controls;
 using System;
+using System.Threading.Tasks;
 
 namespace DominiShop.ViewModel
 {
@@ -10,6 +11,7 @@ namespace DominiShop.ViewModel
     {
         private readonly INavigationService _navigationService;
         private readonly AuthService _authService;
+        private readonly ConfigService _configService; 
 
         [ObservableProperty]
         public partial string CurrentUserName { get; set; } = "Loading...";
@@ -20,10 +22,11 @@ namespace DominiShop.ViewModel
         [ObservableProperty]
         public partial Microsoft.UI.Xaml.Media.ImageSource? ProfileImage { get; set; }
 
-        public MainViewModel(INavigationService navigationService, AuthService authService)
+        public MainViewModel(INavigationService navigationService, AuthService authService, ConfigService configService)
         {
             _navigationService = navigationService;
             _authService = authService;
+            _configService = configService;
 
             LoadUserData();
         }
@@ -33,19 +36,29 @@ namespace DominiShop.ViewModel
             var user = _authService.CurrentUser;
             if (user != null)
             {
-                // Ưu tiên lấy username từ Metadata (cái bạn đã lưu lúc SignUp)
                 if (user.UserMetadata != null && user.UserMetadata.TryGetValue("username", out var name))
                 {
                     CurrentUserName = name.ToString();
                 }
                 else
                 {
-                    // Nếu không có metadata, lấy phần trước chữ @ của email làm tên tạm
                     CurrentUserName = user.Email.Split('@')[0];
                 }
 
                 CurrentUserEmail = user.Email;
             }
+        }
+
+        [RelayCommand]
+        private async Task LogoutAsync()
+        {
+            _configService.ClearCredentials();
+
+            await _authService.LogoutAsync();
+
+            CurrentUserName = "Guest";
+            CurrentUserEmail = string.Empty;
+            ProfileImage = null;
         }
 
         [RelayCommand]

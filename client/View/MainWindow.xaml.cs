@@ -38,9 +38,10 @@ namespace DominiShop.View
 
             if (appWindow != null)
             {
-                appWindow.Resize(new SizeInt32(1440, 1020));
-
-                CenterWindow(appWindow);
+                if (appWindow.Presenter is OverlappedPresenter presenter)
+                {
+                    presenter.Maximize();
+                }
             }
 
             var navService = (NavigationService)App.Services.GetRequiredService<INavigationService>();

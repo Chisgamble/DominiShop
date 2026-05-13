@@ -65,4 +65,12 @@ public sealed partial class TaxPage : Page
             ViewModel.DeleteCommand.Execute(tax);
         }
     }
+
+    private async void AutoApplyToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (sender is not ToggleSwitch toggle || !toggle.IsLoaded || toggle.DataContext is not Tax tax)
+            return;
+
+        await ViewModel.ToggleAutoApplyAsync(tax, toggle.IsOn);
+    }
 }
