@@ -142,6 +142,15 @@ namespace DominiShop
             services.AddSingleton<SettingService>();
             services.AddTransient<SettingsViewModel>();
 
+            // config
+
+            services.AddSingleton<IConfiguration>(configuration);
+            services.AddHttpClient();
+            services.AddTransient<AIService>();
+
+            // report
+            services.AddTransient<ReportViewModel>();
+
             return services.BuildServiceProvider();
         }
 
