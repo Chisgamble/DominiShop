@@ -11,7 +11,42 @@
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
-    <Grid Padding="24" RowSpacing="20">
+    <SplitView IsPaneOpen="{x:Bind ViewModel.IsChatVisible, Mode=TwoWay}" DisplayMode="Overlay" PanePlacement="Right" OpenPaneLength="400">
+        <SplitView.Pane>
+            <Grid Padding="20" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1,0,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="12" Margin="0,0,0,20">
+                    <Button Content="&#xE711;" FontFamily="Segoe MDL2 Assets" Background="Transparent" BorderThickness="0" Command="{x:Bind ViewModel.CloseChatCommand}"/>
+                    <TextBlock Text="AI Assistant" Style="{StaticResource TitleTextBlockStyle}" VerticalAlignment="Center"/>
+                </StackPanel>
+                <ListView Grid.Row="1" ItemsSource="{x:Bind ViewModel.ChatMessages, Mode=OneWay}" SelectionMode="None">
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="model:ChatMessage">
+                            <StackPanel Margin="0,8" HorizontalAlignment="{x:Bind Alignment}">
+                                <TextBlock Text="{x:Bind Role}" FontWeight="SemiBold" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,0,0,4"/>
+                                <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="8" Padding="12">
+                                    <TextBlock Text="{x:Bind Text}" TextWrapping="Wrap"/>
+                                </Border>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+                <Grid Grid.Row="2" Margin="0,16,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0" Text="{x:Bind ViewModel.CurrentChatInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Ask AI something..." Margin="0,0,8,0" VerticalAlignment="Center" AcceptsReturn="True" TextWrapping="Wrap" MaxHeight="100"/>
+                    <Button Grid.Column="1" Content="Send" Style="{StaticResource AccentButtonStyle}" Command="{x:Bind ViewModel.SendMessageCommand}" VerticalAlignment="Stretch"/>
+                </Grid>
+            </Grid>
+        </SplitView.Pane>
+        <SplitView.Content>
+            <Grid Padding="24" RowSpacing="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/> <!-- Title & Filters -->
             <RowDefinition Height="*"/>    <!-- Charts -->
@@ -66,29 +101,34 @@
                                         HorizontalAlignment="Stretch"
                                         TextChanged="ProductSearchBox_TextChanged"
                                         SuggestionChosen="ProductSearchBox_SuggestionChosen"
-                                        DisplayMemberPath="Name"/>
+                                        DisplayMemberPath="Name"
+                                        TextMemberPath="Name"
+                                        UpdateTextOnSelect="False"/>
 
-                        <ItemsControl ItemsSource="{x:Bind ViewModel.ActiveProducts, Mode=OneWay}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <StackPanel Orientation="Horizontal" Spacing="8"/>
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="model:Product">
-                                    <Border Background="{ThemeResource SystemAccentColorLight3}" CornerRadius="4" Padding="8,4">
-                                        <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <TextBlock Text="{x:Bind Name}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorPrimaryBrush}"/>
-                                            <Button Content="&#xE711;" FontFamily="Segoe MDL2 Assets" 
-                                                    Background="Transparent" BorderThickness="0" 
-                                                    Padding="4" MinWidth="0" MinHeight="0"
-                                                    VerticalAlignment="Center"
-                                                    Click="RemoveFilter_Click"/>
-                                        </StackPanel>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                        <ScrollViewer x:Name="ProductTagsScrollViewer" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" HorizontalScrollMode="Enabled" VerticalScrollMode="Disabled" PointerPressed="ProductTagsScrollViewer_PointerPressed" PointerMoved="ProductTagsScrollViewer_PointerMoved" PointerReleased="ProductTagsScrollViewer_PointerReleased" PointerCanceled="ProductTagsScrollViewer_PointerReleased">
+                            <ItemsControl ItemsSource="{x:Bind ViewModel.ActiveProducts, Mode=OneWay}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" Spacing="8"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="model:Product">
+                                        <Border Background="{ThemeResource AccentFillColorDefaultBrush}" CornerRadius="4" Padding="8,4">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{x:Bind Name}" VerticalAlignment="Center" Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"/>
+                                                <Button Content="&#xE711;" FontFamily="Segoe MDL2 Assets" 
+                                                        Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
+                                                        Background="Transparent" BorderThickness="0" 
+                                                        Padding="4" MinWidth="0" MinHeight="0"
+                                                        VerticalAlignment="Center"
+                                                        Click="RemoveFilter_Click"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
                     </StackPanel>
 
                     <lvc:CartesianChart Grid.Row="2" 
@@ -114,7 +154,7 @@
         </Grid>
 
         <!-- AI Placeholder -->
-        <Border Grid.Row="2" Background="{ThemeResource SystemAccentColorLight3}" CornerRadius="8" Padding="20">
+        <Border Grid.Row="2" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="20">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -129,5 +169,7 @@
                         Click="AnalyzeWithAI_Click" VerticalAlignment="Center"/>
             </Grid>
         </Border>
-    </Grid>
+        </Grid>
+        </SplitView.Content>
+    </SplitView>
 </Page>

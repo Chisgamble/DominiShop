@@ -58,6 +58,12 @@ namespace DominiShop.View
 
         private async void AnalyzeWithAI_Click(object sender, RoutedEventArgs e)
         {
+            if (ViewModel.ChatMessages.Count > 0)
+            {
+                ViewModel.StartChat();
+                return;
+            }
+
             var dialog = new ContentDialog
             {
                 Title = "AI Analysis Approval",
@@ -70,14 +76,43 @@ namespace DominiShop.View
             var result = await dialog.ShowAsync();
             if (result == ContentDialogResult.Primary)
             {
-                var resultDialog = new ContentDialog
-                {
-                    Title = "Analysis Complete",
-                    Content = "The AI has analyzed the report successfully! (Placeholder response)",
-                    CloseButtonText = "OK",
-                    XamlRoot = this.XamlRoot
-                };
-                await resultDialog.ShowAsync();
+                ViewModel.StartChat();
+            }
+        }
+
+        private bool _isDraggingTags = false;
+        private double _lastPointerX;
+
+        private void ProductTagsScrollViewer_PointerPressed(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+        {
+            var sv = sender as ScrollViewer;
+            if (sv != null)
+            {
+                _isDraggingTags = true;
+                _lastPointerX = e.GetCurrentPoint(sv).Position.X;
+                sv.CapturePointer(e.Pointer);
+            }
+        }
+
+        private void ProductTagsScrollViewer_PointerMoved(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+        {
+            var sv = sender as ScrollViewer;
+            if (_isDraggingTags && sv != null)
+            {
+                double currentX = e.GetCurrentPoint(sv).Position.X;
+                double delta = _lastPointerX - currentX;
+                sv.ChangeView(sv.HorizontalOffset + delta, null, null);
+                _lastPointerX = currentX;
+            }
+        }
+
+        private void ProductTagsScrollViewer_PointerReleased(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+        {
+            var sv = sender as ScrollViewer;
+            if (sv != null)
+            {
+                _isDraggingTags = false;
+                sv.ReleasePointerCapture(e.Pointer);
             }
         }
     }

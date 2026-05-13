@@ -59,6 +59,15 @@ namespace DominiShop.ViewModel
         [ObservableProperty]
         public partial IEnumerable<ICartesianAxis> RevenueXAxes { get; set; }
 
+        [ObservableProperty]
+        public partial bool IsChatVisible { get; set; }
+
+        [ObservableProperty]
+        public partial ObservableCollection<ChatMessage> ChatMessages { get; set; } = new();
+
+        [ObservableProperty]
+        public partial string CurrentChatInput { get; set; } = string.Empty;
+
         public ReportViewModel(ProductService productService, OrderService orderService)
         {
             _productService = productService;
@@ -145,8 +154,8 @@ namespace DominiShop.ViewModel
             if (!groupedOrders.Any())
             {
                 SalesSeries.Add(new LineSeries<int> { Values = new[] { 0 }, Name = "Total Sales" });
-                RevenueSeries.Add(new ColumnSeries<double> { Values = new[] { 0.0 }, Name = "Revenue ($)" });
-                RevenueSeries.Add(new ColumnSeries<double> { Values = new[] { 0.0 }, Name = "Profit ($)" });
+                RevenueSeries.Add(new ColumnSeries<double> { Values = new[] { 0.0 }, Name = "Revenue (VND)" });
+                RevenueSeries.Add(new ColumnSeries<double> { Values = new[] { 0.0 }, Name = "Profit (VND)" });
                 
                 var emptyAxis = new[] { new Axis { Labels = new[] { "No Data" }, LabelsRotation = 15 } };
                 SalesXAxes = emptyAxis;
@@ -236,13 +245,13 @@ namespace DominiShop.ViewModel
             RevenueSeries.Add(new ColumnSeries<double>
             {
                 Values = revenueValues.ToArray(),
-                Name = "Revenue ($)",
+                Name = "Revenue (VND)",
             });
 
             RevenueSeries.Add(new ColumnSeries<double>
             {
                 Values = profitValues.ToArray(),
-                Name = "Profit ($)",
+                Name = "Profit (VND)",
             });
 
             var axes = new[] { new Axis { Labels = labels.ToArray(), LabelsRotation = 15 } };
@@ -342,6 +351,43 @@ namespace DominiShop.ViewModel
                     GenerateCharts();
                 }
             }
+        }
+
+        [RelayCommand]
+        public void StartChat()
+        {
+            if (ChatMessages.Count == 0)
+            {
+                ChatMessages.Add(new ChatMessage 
+                { 
+                    Role = "AI", 
+                    Text = "I have successfully analyzed the sales, revenue, and profit data. Based on the recent trends, it looks like there are opportunities to optimize product bundles. How can I assist you with your business planning today?" 
+                });
+            }
+            IsChatVisible = true;
+        }
+
+        [RelayCommand]
+        public void CloseChat()
+        {
+            IsChatVisible = false;
+        }
+
+        [RelayCommand]
+        public async Task SendMessageAsync()
+        {
+            if (string.IsNullOrWhiteSpace(CurrentChatInput))
+                return;
+
+            var userText = CurrentChatInput;
+            CurrentChatInput = string.Empty;
+
+            ChatMessages.Add(new ChatMessage { Role = "User", Text = userText });
+
+            // Simulate AI delay
+            await Task.Delay(1000);
+
+            ChatMessages.Add(new ChatMessage { Role = "AI", Text = "That's a great point. Considering the report data, focusing on top-performing products while re-evaluating underperforming ones could improve overall profit margins." });
         }
     }
 }
