@@ -23,12 +23,55 @@ namespace DominiShop.View
         private async void ReportPage_Loaded(object sender, RoutedEventArgs e)
         {
             await ViewModel.InitializeAsync();
+            ViewModel.ChatMessages.CollectionChanged += ChatMessages_CollectionChanged;
+            ViewModel.PropertyChanged += ViewModel_PropertyChanged;
         }
 
-        public Visibility IsCustomDateVisible(string filter)
+        private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            return filter == "Custom Date Range" ? Visibility.Visible : Visibility.Collapsed;
+            if (e.PropertyName == nameof(ViewModel.IsChatVisible) && ViewModel.IsChatVisible)
+            {
+                ScrollChatToBottom();
+            }
         }
+
+        private void ChatMessages_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        {
+            ScrollChatToBottom();
+        }
+
+        private void ScrollChatToBottom()
+        {
+            if (ViewModel.ChatMessages.Count > 0)
+            {
+                // Delay slightly to allow the UI to update the items before scrolling
+                _ = DispatcherQueue.TryEnqueue(() =>
+                {
+                    ChatListView.ScrollIntoView(ViewModel.ChatMessages.Last());
+                });
+            }
+        }
+
+        private async void ClearChat_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new ContentDialog
+            {
+                Title = "Clear Chat History",
+                Content = "Are you sure you want to delete all chat messages? This cannot be undone.",
+                PrimaryButtonText = "Clear",
+                CloseButtonText = "Cancel",
+                XamlRoot = this.XamlRoot
+            };
+
+            var result = await dialog.ShowAsync();
+            if (result == ContentDialogResult.Primary)
+            {
+                ViewModel.ClearChat();
+            }
+        }
+
+
+
 
         private void ProductSearchBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
         {
@@ -59,28 +102,70 @@ namespace DominiShop.View
             }
         }
 
-        private async void AnalyzeWithAI_Click(object sender, RoutedEventArgs e)
+        private async void ExportData_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = new ContentDialog
-            {
-                Title = "AI Analysis Approval",
-                Content = "This feature will export the current report data (sales, revenue, profit) and send it to our AI service for analysis. Do you approve?",
-                PrimaryButtonText = "Approve & Analyze",
-                CloseButtonText = "Cancel",
-                XamlRoot = this.XamlRoot
-            };
+            string folder = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DominiShop");
+            System.IO.Directory.CreateDirectory(folder);
+            string approvalFilePath = System.IO.Path.Combine(folder, "ai_approval.txt");
+            bool hasApproved = System.IO.File.Exists(approvalFilePath);
 
-            var result = await dialog.ShowAsync();
-            if (result == ContentDialogResult.Primary)
+            if (!hasApproved)
             {
-                var resultDialog = new ContentDialog
+                var dialog = new ContentDialog
                 {
-                    Title = "Analysis Complete",
-                    Content = "The AI has analyzed the report successfully! (Placeholder response)",
-                    CloseButtonText = "OK",
+                    Title = "AI Analysis Approval",
+                    Content = "This feature will export the current report data (sales, revenue, profit) and send it to our AI service for analysis. Do you approve?",
+                    PrimaryButtonText = "Approve & Analyze",
+                    CloseButtonText = "Cancel",
                     XamlRoot = this.XamlRoot
                 };
-                await resultDialog.ShowAsync();
+
+                var result = await dialog.ShowAsync();
+                if (result == ContentDialogResult.Primary)
+                {
+                    System.IO.File.WriteAllText(approvalFilePath, "true");
+                    await ViewModel.StartChatAsync();
+                }
+            }
+            else
+            {
+                await ViewModel.StartChatAsync();
+            }
+        }
+
+        private bool _isDraggingTags = false;
+        private double _lastPointerX;
+
+        private void ProductTagsScrollViewer_PointerPressed(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+        {
+            var sv = sender as ScrollViewer;
+            if (sv != null)
+            {
+                _isDraggingTags = true;
+                _lastPointerX = e.GetCurrentPoint(sv).Position.X;
+                sv.CapturePointer(e.Pointer);
+            }
+        }
+
+        private void ProductTagsScrollViewer_PointerMoved(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+        {
+            var sv = sender as ScrollViewer;
+            if (_isDraggingTags && sv != null)
+            {
+                double currentX = e.GetCurrentPoint(sv).Position.X;
+                double delta = _lastPointerX - currentX;
+                sv.ChangeView(sv.HorizontalOffset + delta, null, null);
+                _lastPointerX = currentX;
+            }
+        }
+
+        private void ProductTagsScrollViewer_PointerReleased(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+        {
+            var sv = sender as ScrollViewer;
+            if (sv != null)
+            {
+                _isDraggingTags = false;
+                sv.ReleasePointerCapture(e.Pointer);
             }
         }
     }
